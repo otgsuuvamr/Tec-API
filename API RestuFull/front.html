@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APtec</title>
+  </head>
+  <body>
+    <input id="id" placeholder="ID" />
+    <input id="titulo" placeholder="Título" />
+    <input id="preco" placeholder="Preço" />
+    <input id="descricao" placeholder="Descrição" />
+    <input id="emEstoque" placeholder="emEstoque" />
+    <button onclick="AddProd()">Adicionar o Produto</button>
+    <button onclick="AttProd()">Atualizar o Produto</button>
+    <button onclick="DeleteProd()">Excluir o Produto</button>
+    <button onclick="ReadProd()">Buscar o Produto</button>
+    <script>
+      const API = "http://localhost:3000/products/";
+
+      function AddProd() {
+        const titulo = document.getElementById("titulo").value;
+        const preco = parseFloat(document.getElementById("preco").value);
+        const descricao = document.getElementById("descricao").value;
+        const estoque =
+          document.getElementById("emEstoque").value.toLowerCase() === "true";
+
+        fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ titulo, preco, descricao, emEstoque }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert(data.message || "Produto criado com sucesso!");
+            console.log(data);
+          })
+          .catch((err) => console.error("Erro:", err));
+      }
+
+      function AttProd() {
+        const id = document.getElementById("id").value;
+        const titulo = document.getElementById("titulo").value;
+        const preco = parseFloat(document.getElementById("preco").value);
+        const descricao = document.getElementById("descricao").value;
+        const estoque = document.getElementById("emEstoque").value.toLowerCase() === "true";
+
+        fetch(API + id, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ titulo, preco, descricao, emEstoque }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert(data.message || "Produto atualizado com sucesso!");
+            console.log(data);
+          })
+          .catch((err) => console.error("Erro:", err));
+      }
+
+      function DeleteProd() {
+        const id = document.getElementById("id").value;
+
+        fetch(API + id, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      function ReadProd() {
+
+      }
+    </script>
+  </body>
+</html>
