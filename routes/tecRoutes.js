@@ -1,15 +1,16 @@
 const express = require("express");
 const tecController = require("../controllers/tecControllers");
-const { tecSchema } = require("../validations/tecValidations");
+const { createSchema } = require("../validations/createSchema");
+const { updateSchema } = require("../validations/updateSchema");
 const validate = require("../middlewares/validate");
-const validateID = require("../middlewares/validateID");
+const CheckID = require("../middlewares/CheckID");
 
 const router = express.Router();
 
-router.post("/", validate(tecSchema), tecController.create);
-router.put("/:id", validateID, validate(tecSchema), tecController.update);
-router.delete("/:id", validateID, validate(tecSchema), tecController.delete);
-router.get("/", validate(tecSchema), tecController.read);
-router.get("/:id", validateID, validate(tecSchema), tecController.readID);
+router.post("/", validate(createSchema), tecController.create);
+router.put("/:id", CheckID, validate(updateSchema), tecController.update);
+router.delete("/:id", CheckID, validate(createSchema), tecController.delete);
+router.get("/", validate(createSchema), tecController.read);
+router.get("/:id", CheckID, validate(createSchema), tecController.readID);
 
 module.exports = router;
