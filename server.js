@@ -1,7 +1,7 @@
 const express = require("express"); // Importa a biblioteca express.
 require("./config/dbTec");
 const prodRoutes = require("./routes/tecRoutes");
-const tec = require("./models/tec");
+const Tec = require("./models/tec");
 
 const app = express();
 const cors = require("cors");

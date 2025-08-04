@@ -19,7 +19,7 @@
         <input id="descricao" placeholder="Descrição" class="input" />
         <input
           id="emEstoque"
-          placeholder="emEstoque (true/false)"
+          placeholder="emEstoque (Sim/Não)"
           class="input"
         />
       </div>
@@ -94,23 +94,27 @@
       function formatProduct(prod, index = null) {
         const emEstoque = prod.emEstoque ? "Sim" : "Não";
         return `
-        <div class="bg-gray-50 p-3 rounded shadow-sm mb-2">
-      ${index ? `<h3 class="font-bold text-lg mb-1">Produto ${index}</h3>` : ""}
-      <p><strong>ID:</strong> ${prod._id}</p>
-      <p><strong>Título:</strong> ${prod.titulo}</p>
-      <p><strong>Preço:</strong> R$ ${prod.preco.toFixed(2)}</p>
-      <p><strong>Descrição:</strong> ${prod.descricao}</p>
-      <p><strong>Em Estoque:</strong> ${emEstoque}</p>
-    </div>
-  `;
+              <div class="bg-gray-50 p-3 rounded shadow-sm mb-2">
+            ${
+              index
+                ? `<h3 class="font-bold text-lg mb-1">Produto ${index}</h3>`
+                : ""
+            }
+            <p><strong>ID:</strong> ${prod._id}</p>
+            <p><strong>Título:</strong> ${prod.titulo}</p>
+            <p><strong>Preço:</strong> R$ ${prod.preco.toFixed(2)}</p>
+            <p><strong>Descrição:</strong> ${prod.descricao}</p>
+            <p><strong>Em Estoque:</strong> ${emEstoque}</p>
+          </div>
+        `;
       }
 
       function AddProd() {
         const titulo = document.getElementById("titulo").value;
         const preco = parseFloat(document.getElementById("preco").value);
         const descricao = document.getElementById("descricao").value;
-        const emEstoque =
-         document.getElementById("emEstoque").value.toLowerCase() === "true";
+        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
+        const emEstoque = emEstoqueRaw === "" ? undefined : emEstoqueRaw.toLowerCase() === "true";
 
         fetch(API, {
           method: "POST",
@@ -119,25 +123,42 @@
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((err) => alert("Erro ao adicionar: " + err));
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
       }
 
       function AttProd() {
         const id = document.getElementById("id").value;
         const titulo = document.getElementById("titulo").value;
-        const preco = parseFloat(document.getElementById("preco").value);
+        const precoRaw = document.getElementById("preco").value.trim();
         const descricao = document.getElementById("descricao").value;
-        const emEstoque =
-          document.getElementById("emEstoque").value.toLowerCase() === "true";
+        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
+        const emEstoque = emEstoqueRaw === "" ? undefined : emEstoqueRaw.toLowerCase() === "true";
+
+        const payload = {};
+        if (titulo) payload.titulo = titulo;
+        if (precoRaw) {
+        const preco = parseFloat(precoRaw);
+        if (!isNaN(preco)) payload.preco = preco;
+        }
+        if (descricao) payload.descricao = descricao;
+        if (emEstoque !== undefined || emEstoque !== null) payload.emEstoque = emEstoque;
 
         fetch(API + id, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ titulo, preco, descricao, emEstoque }),
+          body: JSON.stringify(payload),
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((err) => alert("Erro ao atualizar: " + err));
+          .catch(async (err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
       }
 
       function DeleteProd() {
@@ -147,7 +168,11 @@
         })
           .then((res) => res.text())
           .then((text) => renderResult({ message: text }))
-          .catch((err) => alert("Erro ao deletar: " + err));
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
       }
 
       function ReadProd() {
@@ -157,7 +182,11 @@
         fetch(url)
           .then((res) => res.json())
           .then(renderResult)
-          .catch((err) => alert("Erro ao buscar: " + err));
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
       }
     </script>
   </body>
