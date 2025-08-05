@@ -1,8 +1,8 @@
-const mongoose = require("mongoose"); // Importa a biblioteca do MongoDB.
+const mongoose = require("mongoose"); // Importa a biblioteca do MongoDB;
 
-mongoose.set("strictQuery", true);
+mongoose.set("strictQuery", true); // Chama a função Set da biblioteca mongoose e passa dois parâmetros;
 
-require("dotenv").config(); // Criptografa os dados de acesso do DB
+require("dotenv").config(); // Oculta os dados de acesso do DB
 
 // Credenciais do DB
 const dbUser = process.env.DB_USER;

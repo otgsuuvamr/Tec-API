@@ -27,16 +27,16 @@ exports.update = async (req, res) => {
   const data = req.body;
 
   try {
-    const produtoExistente = await Tec.findById(id);
+    const existentProd = await Tec.findById(id);
 
-    if (!produtoExistente) {
+    if (!existentProd) {
       return res.status(404).json({ error: "Produto não encontrado." });
     }
 
     // Campos obrigatórios validados pelo middleware
 
     const updateProd = await Tec.findByIdAndUpdate(id, data, {
-      new: true
+      new: true,
     });
 
     res.status(200).json({
@@ -60,7 +60,7 @@ exports.delete = async (req, res) => {
   }
 };
 
-// Lê todas os produtos da base;
+// Lê todos os produtos da base;
 exports.read = async (req, res) => {
   try {
     // Busca todos os produtos disponíveis;

@@ -17,11 +17,7 @@
         <input id="titulo" placeholder="Título" class="input" />
         <input id="preco" placeholder="Preço" class="input" />
         <input id="descricao" placeholder="Descrição" class="input" />
-        <input
-          id="emEstoque"
-          placeholder="emEstoque (Sim/Não)"
-          class="input"
-        />
+        <input id="emEstoque" placeholder="emEstoque (Sim/Não)" class="input" />
       </div>
 
       <div class="flex gap-4 justify-center mb-6">
@@ -114,7 +110,10 @@
         const preco = parseFloat(document.getElementById("preco").value);
         const descricao = document.getElementById("descricao").value;
         const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque = emEstoqueRaw === "" ? undefined : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque =
+          emEstoqueRaw === ""
+            ? undefined
+            : emEstoqueRaw.toLowerCase() === "true";
 
         fetch(API, {
           method: "POST",
@@ -136,16 +135,20 @@
         const precoRaw = document.getElementById("preco").value.trim();
         const descricao = document.getElementById("descricao").value;
         const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque = emEstoqueRaw === "" ? undefined : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque =
+          emEstoqueRaw === ""
+            ? undefined
+            : emEstoqueRaw.toLowerCase() === "true";
 
         const payload = {};
         if (titulo) payload.titulo = titulo;
         if (precoRaw) {
-        const preco = parseFloat(precoRaw);
-        if (!isNaN(preco)) payload.preco = preco;
+          const preco = parseFloat(precoRaw);
+          if (!isNaN(preco)) payload.preco = preco;
         }
         if (descricao) payload.descricao = descricao;
-        if (emEstoque !== undefined || emEstoque !== null) payload.emEstoque = emEstoque;
+        if (emEstoque !== undefined || emEstoque !== null)
+          payload.emEstoque = emEstoque;
 
         fetch(API + id, {
           method: "PUT",

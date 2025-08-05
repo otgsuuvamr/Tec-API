@@ -24,11 +24,6 @@ module.exports =
           });
         }
       }
-
-      // Preencher valor padrão para emEstoque, se não for enviado
-      if (body.emEstoque === undefined) {
-        body.emEstoque = true;
-      }
     }
 
     const { error } = schema.validate(body);

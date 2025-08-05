@@ -1,15 +1,17 @@
+require("dotenv").config();
 const express = require("express"); // Importa a biblioteca express.
-require("./config/dbTec");
-const prodRoutes = require("./routes/tecRoutes");
-const Tec = require("./models/tec");
+const cors = require("cors");
+const conDB = require("./config/dbTec");
+const tecRoutes = require("./routes/tecRoutes");
+const authRoutes = require("./routes/authRoutes");
+const auth = require("./middlewares/auth");
 
 const app = express();
-const cors = require("cors");
-const PORT = 3000;
 
 // Middleware;
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
+conDB();
 
 // Rota de Boas-Vindas;
 app.get("/", (req, res) => {
@@ -17,9 +19,16 @@ app.get("/", (req, res) => {
 });
 
 // Caminho dos produtos (Principal);
-app.use("/products", prodRoutes);
+app.use("/products", auth, tecRoutes);
 
-// Inicia o servidor na porta estabelecida (3000);
+// Caminho de Login/Cadastro;
+app.use("/auth", authRoutes);
+
+// Caminho público;
+app.use("/public", express.static("public"));
+
+// Inicia o servidor na porta estabelecida;
+const PORT = dotEnv.process.env.PORT;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor rodando`);
 });
