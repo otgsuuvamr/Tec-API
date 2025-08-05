@@ -1,4 +1,4 @@
-const Joi = required("Joi");
+const Joi = require("Joi");
 
 const userSchema = Joi.object({
   name: Joi.string().min(2).required().messages({

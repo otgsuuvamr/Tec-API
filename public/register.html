@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cadastro - LojaTec</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-50 min-h-screen flex items-center justify-center">
+    <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-4 text-center">📝 Criar Conta na LojaTec</h1>
+
+      <form id="registerForm" class="space-y-4">
+        <input type="text" id="nome" placeholder="Seu nome" required class="input" />
+        <input type="email" id="email" placeholder="Seu e-mail" required class="input" />
+        <input type="password" id="senha" placeholder="Crie uma senha" required class="input" />
+        <button type="submit" class="btn bg-green-600 hover:bg-green-700">Registrar</button>
+      </form>
+
+      <p id="status" class="text-sm text-center text-red-600 mt-3"></p>
+
+      <div class="mt-4 text-center text-sm">
+        Já tem conta?
+        <a href="index.html" class="text-blue-600 underline">Fazer login</a>
+      </div>
+    </div>
+
+    <style>
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
+      .btn {
+        width: 100%;
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/register";
+
+      document.getElementById("registerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const nome = document.getElementById("nome").value;
+        const email = document.getElementById("email").value;
+        const senha = document.getElementById("senha").value;
+
+        const res = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, email, senha })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("✅ Cadastro realizado com sucesso! Faça login.");
+          window.location.href = "index.html";
+        } else {
+          document.getElementById("status").textContent = data.error || "Erro ao cadastrar.";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -28,7 +28,7 @@ app.use("/auth", authRoutes);
 app.use("/public", express.static("public"));
 
 // Inicia o servidor na porta estabelecida;
-const PORT = dotEnv.process.env.PORT;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Servidor rodando`);
 });

@@ -49,6 +49,12 @@
 
     <script>
       const API = "http://localhost:3000/products/";
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Você precisa estar logado para acessar esta área.");
+        window.location.href = "/public/index.html";
+      }
 
       function renderResult(data) {
         const resultDiv = document.getElementById("result");
@@ -117,7 +123,9 @@
 
         fetch(API, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", 
+          Authorization: "Bearer " + token,
+          },
           body: JSON.stringify({ titulo, preco, descricao, emEstoque }),
         })
           .then((res) => res.json())
@@ -152,7 +160,9 @@
 
         fetch(API + id, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+          },
           body: JSON.stringify(payload),
         })
           .then((res) => res.json())
@@ -168,6 +178,7 @@
         const id = document.getElementById("id").value;
         fetch(API + id, {
           method: "DELETE",
+          Authorization: "Bearer " + token,
         })
           .then((res) => res.text())
           .then((text) => renderResult({ message: text }))
@@ -182,7 +193,11 @@
         const id = document.getElementById("id").value;
         const url = id ? API + id : API;
 
-        fetch(url)
+        fetch(url, {
+          headers: {
+            Authorization: "Bearer " + toekn,
+          },
+        })
           .then((res) => res.json())
           .then(renderResult)
           .catch((err) => {
