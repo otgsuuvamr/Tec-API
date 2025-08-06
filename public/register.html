@@ -10,9 +10,10 @@
       <h1 class="text-2xl font-bold mb-4 text-center">📝 Criar Conta na LojaTec</h1>
 
       <form id="registerForm" class="space-y-4">
-        <input type="text" id="nome" placeholder="Seu nome" required class="input" />
+        <input type="text" id="name" placeholder="Seu name" required class="input" />
         <input type="email" id="email" placeholder="Seu e-mail" required class="input" />
-        <input type="password" id="senha" placeholder="Crie uma senha" required class="input" />
+        <input type="password" id="password" placeholder="Crie uma senha" required class="input" />
+        <input type="password" id="confpass" placeholder="Confirme a senha" required class="input" />
         <button type="submit" class="btn bg-green-600 hover:bg-green-700">Registrar</button>
       </form>
 
@@ -47,14 +48,15 @@
       document.getElementById("registerForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const nome = document.getElementById("nome").value;
+        const name = document.getElementById("name").value;
         const email = document.getElementById("email").value;
-        const senha = document.getElementById("senha").value;
+        const password = document.getElementById("password").value;
+        const confpass = document.getElementById("confpass").value;
 
         const res = await fetch(API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome, email, senha })
+          body: JSON.stringify({ name, email, password })
         });
 
         const data = await res.json();
