@@ -1,4 +1,4 @@
-const Joi = require("Joi");
+const Joi = require("joi");
 
 const productSchema = Joi.object({
   titulo: Joi.string().min(2).optional().messages({

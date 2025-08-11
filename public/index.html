@@ -5,20 +5,38 @@
     <title>Área Pública - LojaTec</title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="bg-blue-50 text-gray-800 min-h-screen flex flex-col justify-center items-center">
+  <body
+    class="bg-blue-50 text-gray-800 min-h-screen flex flex-col justify-center items-center"
+  >
     <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
-      <h1 class="text-2xl font-bold text-center mb-4">🔓 Área Pública da LojaTec</h1>
+      <h1 class="text-2xl font-bold text-center mb-4">
+        🔓 Área Pública da LojaTec
+      </h1>
       <p class="text-center text-sm mb-6">
-        Esta é uma seção pública da aplicação. Para acessar a área de controle de estoque,
-        é necessário estar autenticado. Entre em sua conta ou cadastre-se!
+        Esta é uma seção pública da aplicação. Para acessar a área de controle
+        de estoque, é necessário estar autenticado. Entre em sua conta ou
+        cadastre-se!
       </p>
 
       <form id="loginForm" class="space-y-4">
-        <input type="email" id="email" placeholder="E-mail" required
-          class="w-full p-2 border rounded" />
-        <input type="password" id="senha" placeholder="Senha" required
-          class="w-full p-2 border rounded" />
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">
+        <input
+          type="email"
+          id="email"
+          placeholder="E-mail"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <input
+          type="password"
+          id="senha"
+          placeholder="Senha"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <button
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+        >
           Entrar
         </button>
       </form>
@@ -28,35 +46,38 @@
       <div class="mt-6 text-center text-sm">
         Ainda não tem uma conta?
         <a href="register.html" class="text-blue-600 underline">
-            Registre-se
-          </a>          
+          Registre-se
+        </a>
       </div>
     </div>
 
     <script>
-      document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("email").value;
-        const senha = document.getElementById("senha").value;
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("email").value;
+          const senha = document.getElementById("senha").value;
 
-        const res = await fetch("http://localhost:3000/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, senha })
+          const res = await fetch("http://localhost:3000/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, senha }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            // Salvar token no localStorage
+            localStorage.setItem("token", data.token);
+
+            // Redirecionar para a área privada
+            window.location.href = "../front.html"; // Ex: sua tela de produtos
+          } else {
+            document.getElementById("status").textContent =
+              data.error || "Erro ao autenticar.";
+          }
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          // Salvar token no localStorage
-          localStorage.setItem("token", data.token);
-
-          // Redirecionar para a área privada
-          window.location.href = "../front.html"; // Ex: sua tela de produtos
-        } else {
-          document.getElementById("status").textContent = data.error || "Erro ao autenticar.";
-        }
-      });
     </script>
   </body>
 </html>

@@ -7,14 +7,42 @@
   </head>
   <body class="bg-blue-50 min-h-screen flex items-center justify-center">
     <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
-      <h1 class="text-2xl font-bold mb-4 text-center">📝 Criar Conta na LojaTec</h1>
+      <h1 class="text-2xl font-bold mb-4 text-center">
+        📝 Criar Conta na LojaTec
+      </h1>
 
       <form id="registerForm" class="space-y-4">
-        <input type="text" id="name" placeholder="Seu name" required class="input" />
-        <input type="email" id="email" placeholder="Seu e-mail" required class="input" />
-        <input type="password" id="password" placeholder="Crie uma senha" required class="input" />
-        <input type="password" id="confpass" placeholder="Confirme a senha" required class="input" />
-        <button type="submit" class="btn bg-green-600 hover:bg-green-700">Registrar</button>
+        <input
+          type="text"
+          id="name"
+          placeholder="Seu name"
+          required
+          class="input"
+        />
+        <input
+          type="email"
+          id="email"
+          placeholder="Seu e-mail"
+          required
+          class="input"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Crie uma senha"
+          required
+          class="input"
+        />
+        <input
+          type="password"
+          id="confpass"
+          placeholder="Confirme a senha"
+          required
+          class="input"
+        />
+        <button type="submit" class="btn bg-green-600 hover:bg-green-700">
+          Registrar
+        </button>
       </form>
 
       <p id="status" class="text-sm text-center text-red-600 mt-3"></p>
@@ -45,29 +73,32 @@
     <script>
       const API = "http://localhost:3000/auth/register";
 
-      document.getElementById("registerForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
 
-        const name = document.getElementById("name").value;
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        const confpass = document.getElementById("confpass").value;
+          const name = document.getElementById("name").value;
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const confpass = document.getElementById("confpass").value;
 
-        const res = await fetch(API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password })
+          const res = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password, confpass }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            alert("✅ Cadastro realizado com sucesso! Faça login.");
+            window.location.href = "index.html";
+          } else {
+            document.getElementById("status").textContent =
+              data.error || "Erro ao cadastrar.";
+          }
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          alert("✅ Cadastro realizado com sucesso! Faça login.");
-          window.location.href = "index.html";
-        } else {
-          document.getElementById("status").textContent = data.error || "Erro ao cadastrar.";
-        }
-      });
     </script>
   </body>
 </html>

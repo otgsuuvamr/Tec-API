@@ -1,4 +1,4 @@
-const Joi = require("Joi");
+const Joi = require("joi");
 
 const userSchema = Joi.object({
   name: Joi.string().min(2).required().messages({
@@ -13,6 +13,10 @@ const userSchema = Joi.object({
   password: Joi.string().min(6).required().messages({
     "string.min": "Sua senha deve conter ao menos 6 caracteres.",
     "any.required": "O campo Senha é obrigatória.",
+  }),
+  confPass: Joi.any().valid(Joi.ref("password")).required().messages({
+    "any.only": "As senhas não coincidem.",
+    "any.required": "A confirmação de senha é obrigatória.",
   }),
 });
 

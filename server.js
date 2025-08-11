@@ -1,31 +1,31 @@
-require("dotenv").config();
-const express = require("express"); // Importa a biblioteca express.
+const express = require("express");
+const dotenv = require("dotenv");
 const cors = require("cors");
-const conDB = require("./config/dbTec");
-const tecRoutes = require("./routes/tecRoutes");
-const authRoutes = require("./routes/authRoutes");
-const auth = require("./middlewares/auth");
+const connectDB = require("./config/dbTec");
 
+const userRoutes = require("./routes/userRoutes");
+const productRoutes = require("./routes/productRoutes");
+const requireAuth = require("./middlewares/auth/requireAuth");
+
+dotenv.config();
 const app = express();
 
-// Middleware;
 app.use(cors());
 app.use(express.json());
-conDB();
+
+// Rotas públicas;
+app.use("/auth", userRoutes);
+
+// Middleware de autenticação global;
+app.use(requireAuth);
+
+// Rotas privadas (Principal);
+app.use("/products", productRoutes);
 
 // Rota de Boas-Vindas;
 app.get("/", (req, res) => {
-  res.status(200).send("Boas-Vindas à API Tec");
+  res.status(200).send("Boas-Vindas à API product");
 });
-
-// Caminho dos produtos (Principal);
-app.use("/products", auth, tecRoutes);
-
-// Caminho de Login/Cadastro;
-app.use("/auth", authRoutes);
-
-// Caminho público;
-app.use("/public", express.static("public"));
 
 // Inicia o servidor na porta estabelecida;
 const PORT = process.env.PORT;

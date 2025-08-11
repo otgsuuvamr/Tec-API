@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meu Perfil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 text-gray-800 font-sans">
+    <div class="max-w-xl mx-auto p-6 bg-white shadow-md mt-10 rounded-lg">
+      <h1 class="text-2xl font-bold mb-6 text-center">👤 Meu Perfil</h1>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-1">Nome:</label>
+        <input id="name" class="input" />
+        <button onclick="updateName()" class="btn bg-green-500 mt-2">
+          Atualizar Nome
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-1">E-mail:</label>
+        <input id="email" class="input bg-gray-100" disabled />
+      </div>
+
+      <div class="space-y-2 mt-6">
+        <a href="updatePass.html" class="btn bg-yellow-500 block text-center"
+          >🔐 Alterar Senha</a
+        >
+        <a href="updateEmail.html" class="btn bg-purple-500 block text-center"
+          >📧 Alterar E-mail</a
+        >
+        <a href="deleteAcc.html" class="btn bg-red-600 block text-center"
+          >❌ Excluir Conta</a
+        >
+      </div>
+    </div>
+
+    <style>
+      .input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+        width: 100%;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        text-decoration: none;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth";
+
+      const headers = () => ({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      });
+
+      function loadProfile() {
+        fetch(`${API}/me`, {
+          method: "GET",
+          headers: headers(),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("name").value = data.name;
+            document.getElementById("email").value = data.email;
+          });
+      }
+
+      function updateName() {
+        const name = document.getElementById("name").value;
+
+        if (!name || name.trim().length < 2) {
+          alert("❌ O nome deve ter pelo menos 2 caracteres.");
+          return;
+        }
+
+        fetch(`${API}/me`, {
+          method: "PUT",
+          headers: headers(),
+          body: JSON.stringify({ name }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert(data.message || "Nome atualizado!");
+            loadProfile();
+          });
+      }
+
+      // Carrega os dados ao entrar na página
+      loadProfile();
+    </script>
+  </body>
+</html>
