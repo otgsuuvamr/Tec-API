@@ -17,7 +17,10 @@
         <input id="titulo" placeholder="Título" class="input" />
         <input id="preco" placeholder="Preço" class="input" />
         <input id="descricao" placeholder="Descrição" class="input" />
-        <input id="emEstoque" placeholder="emEstoque (Sim/Não)" class="input" />
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="emEstoque" checked />
+          <span>Em Estoque?</span>
+        </label>
       </div>
 
       <div class="flex gap-4 justify-center mb-6">
@@ -115,11 +118,7 @@
         const titulo = document.getElementById("titulo").value;
         const preco = parseFloat(document.getElementById("preco").value);
         const descricao = document.getElementById("descricao").value;
-        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque =
-          emEstoqueRaw === ""
-            ? undefined
-            : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque = document.getElementById("emEstoque").checked;
 
         fetch(API, {
           method: "POST",
@@ -143,11 +142,7 @@
         const titulo = document.getElementById("titulo").value;
         const precoRaw = document.getElementById("preco").value.trim();
         const descricao = document.getElementById("descricao").value;
-        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque =
-          emEstoqueRaw === ""
-            ? undefined
-            : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque = document.getElementById("emEstoque").checked;
 
         const payload = {};
         if (titulo) payload.titulo = titulo;
@@ -156,8 +151,7 @@
           if (!isNaN(preco)) payload.preco = preco;
         }
         if (descricao) payload.descricao = descricao;
-        if (emEstoque !== undefined || emEstoque !== null)
-          payload.emEstoque = emEstoque;
+        payload.emEstoque = emEstoque;
 
         fetch(API + id, {
           method: "PUT",

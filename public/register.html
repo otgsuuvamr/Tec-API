@@ -15,7 +15,7 @@
         <input
           type="text"
           id="name"
-          placeholder="Seu name"
+          placeholder="Seu nome"
           required
           class="input"
         />
@@ -35,7 +35,7 @@
         />
         <input
           type="password"
-          id="confpass"
+          id="confPass"
           placeholder="Confirme a senha"
           required
           class="input"
@@ -71,7 +71,7 @@
     </style>
 
     <script>
-      const API = "http://localhost:3000/auth/register";
+      const API = "http://localhost:3000/users/register";
 
       document
         .getElementById("registerForm")
@@ -81,12 +81,12 @@
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
           const password = document.getElementById("password").value;
-          const confpass = document.getElementById("confpass").value;
+          const confPass = document.getElementById("confPass").value;
 
           const res = await fetch(API, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password, confpass }),
+            body: JSON.stringify({ name, email, password, confPass }),
           });
 
           const data = await res.json();
