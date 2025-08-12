@@ -1,0 +1,1144 @@
+Arquivo: "server.js":
+
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const connectDB = require("./config/dbTec");
+
+const userRoutes = require("./routes/userRoutes");
+const productRoutes = require("./routes/productRoutes");
+const requireAuth = require("./middlewares/auth/requireAuth");
+
+dotenv.config();
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Rotas públicas;
+app.use("/auth", userRoutes);
+
+// Middleware de autenticação global;
+app.use(requireAuth);
+
+// Rotas privadas (Principal);
+app.use("/products", productRoutes);
+
+// Rota de Boas-Vindas;
+app.get("/", (req, res) => {
+  res.status(200).send("Boas-Vindas à API product");
+});
+
+// Inicia o servidor na porta estabelecida;
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando`);
+});
+
+
+Arquivo: "package.json":
+
+{
+  "name": "api-restufull",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "Rosendoo",
+  "license": "ISC",
+  "description": "API - Loja de vendas",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
+
+
+Arquivo: "product.html":
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loja Tec</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 text-gray-800 font-sans">
+    <div class="max-w-4xl mx-auto p-5">
+      <h1 class="text-3xl font-bold text-center mb-6">
+        📦 Gerenciador de Produtos
+      </h1>
+
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <input id="id" placeholder="ID" class="input" />
+        <input id="titulo" placeholder="Título" class="input" />
+        <input id="preco" placeholder="Preço" class="input" />
+        <input id="descricao" placeholder="Descrição" class="input" />
+        <input id="emEstoque" placeholder="emEstoque (Sim/Não)" class="input" />
+      </div>
+
+      <div class="flex gap-4 justify-center mb-6">
+        <button onclick="AddProd()" class="btn bg-green-500">Adicionar</button>
+        <button onclick="AttProd()" class="btn bg-yellow-500">Atualizar</button>
+        <button onclick="DeleteProd()" class="btn bg-red-500">Excluir</button>
+        <button onclick="ReadProd()" class="btn bg-blue-500">Buscar</button>
+      </div>
+
+      <div id="result" class="bg-white shadow p-4 rounded"></div>
+    </div>
+
+    <style>
+      .input {
+        padding: 0.5rem;
+        border: 1px solid #8f8f8f;
+        border-radius: 0.375rem;
+        width: 100%;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/products/";
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Você precisa estar logado para acessar esta área.");
+        window.location.href = "/public/index.html";
+      }
+
+      function renderResult(data) {
+        const resultDiv = document.getElementById("result");
+        let html = "";
+
+        if (data.message) {
+          html += `<p class="text-green-700 font-semibold mb-2">${data.message}</p>`;
+        }
+
+        // Produto único
+        if (data.product) {
+          html += formatProduct(data.product);
+        }
+
+        // Lista de produtos
+        else if (data.products && Array.isArray(data.products)) {
+          html += `<p>Total de produtos: ${data.totalProd}</p>`;
+          data.products.forEach((p, index) => {
+            html += `<div class="mt-2 border-t pt-2">${formatProduct(
+              p,
+              index + 1
+            )}</div>`;
+          });
+        }
+
+        // Mensagem de texto pura (ex: delete)
+        else if (typeof data.message === "string") {
+          html += `<p>${data.message}</p>`;
+        }
+
+        // Erro
+        else if (data.error) {
+          html += `<p class="text-red-600">❌ Erro: ${data.error}</p>`;
+        }
+
+        resultDiv.innerHTML = html;
+      }
+
+      function formatProduct(prod, index = null) {
+        const emEstoque = prod.emEstoque ? "Sim" : "Não";
+        return `
+              <div class="bg-gray-50 p-3 rounded shadow-sm mb-2">
+            ${
+              index
+                ? `<h3 class="font-bold text-lg mb-1">Produto ${index}</h3>`
+                : ""
+            }
+            <p><strong>ID:</strong> ${prod._id}</p>
+            <p><strong>Título:</strong> ${prod.titulo}</p>
+            <p><strong>Preço:</strong> R$ ${prod.preco.toFixed(2)}</p>
+            <p><strong>Descrição:</strong> ${prod.descricao}</p>
+            <p><strong>Em Estoque:</strong> ${emEstoque}</p>
+          </div>
+        `;
+      }
+
+      function AddProd() {
+        const titulo = document.getElementById("titulo").value;
+        const preco = parseFloat(document.getElementById("preco").value);
+        const descricao = document.getElementById("descricao").value;
+        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
+        const emEstoque =
+          emEstoqueRaw === ""
+            ? undefined
+            : emEstoqueRaw.toLowerCase() === "true";
+
+        fetch(API, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({ titulo, preco, descricao, emEstoque }),
+        })
+          .then((res) => res.json())
+          .then(renderResult)
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
+      }
+
+      function AttProd() {
+        const id = document.getElementById("id").value;
+        const titulo = document.getElementById("titulo").value;
+        const precoRaw = document.getElementById("preco").value.trim();
+        const descricao = document.getElementById("descricao").value;
+        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
+        const emEstoque =
+          emEstoqueRaw === ""
+            ? undefined
+            : emEstoqueRaw.toLowerCase() === "true";
+
+        const payload = {};
+        if (titulo) payload.titulo = titulo;
+        if (precoRaw) {
+          const preco = parseFloat(precoRaw);
+          if (!isNaN(preco)) payload.preco = preco;
+        }
+        if (descricao) payload.descricao = descricao;
+        if (emEstoque !== undefined || emEstoque !== null)
+          payload.emEstoque = emEstoque;
+
+        fetch(API + id, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify(payload),
+        })
+          .then((res) => res.json())
+          .then(renderResult)
+          .catch(async (err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
+      }
+
+      function DeleteProd() {
+        const id = document.getElementById("id").value;
+        fetch(API + id, {
+          method: "DELETE",
+          Authorization: "Bearer " + token,
+        })
+          .then((res) => res.text())
+          .then((text) => renderResult({ message: text }))
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
+      }
+
+      function ReadProd() {
+        const id = document.getElementById("id").value;
+        const url = id ? API + id : API;
+
+        fetch(url, {
+          headers: {
+            Authorization: "Bearer " + toekn,
+          },
+        })
+          .then((res) => res.json())
+          .then(renderResult)
+          .catch((err) => {
+            err.json().then((error) => {
+              renderError("Erro: " + (error.error || "Erro desconhecido."));
+            });
+          });
+      }
+    </script>
+  </body>
+</html>
+
+
+Arquivo: ".gitignore":
+
+/node_modules
+.env
+package-lock.json
+
+
+Arquivo: ".env":
+
+DB_USER=gustavomarichi
+DB_PASS=ciFf6ijY1wv4Og7h
+SECRET=cfa95c8d85d8dc5db11a9e20bbfa85ef1293879f8a920e28076f6a58a13b0a53
+PORT=3000
+
+
+Arquivo: "/validations/productSchema.js":
+
+const Joi = require("joi");
+
+const productSchema = Joi.object({
+  titulo: Joi.string().min(2).optional().messages({
+    "string.base": "O título deve ser um texto.",
+    "string.min": "O título deve ter pelo menos 2 caracteres.",
+  }),
+  preco: Joi.number().positive().optional().messages({
+    "number.base": "O preço deve ser um número.",
+    "number.positive": "O preço deve ser positivo.",
+  }),
+  descricao: Joi.string().min(3).optional().messages({
+    "string.base": "A descrição deve ser um texto.",
+    "string.min": "A descrição deve ter pelo menos 3 caracteres.",
+  }),
+  emEstoque: Joi.boolean().default(true),
+});
+
+module.exports = { productSchema };
+
+
+Arquivo: "/validations/userSchema.js":
+
+const Joi = require("joi");
+
+const userSchema = Joi.object({
+  name: Joi.string().min(2).required().messages({
+    "string-base": "Seu nome deve ser no formato de texto.",
+    "string-min": "Seu nome deve conter ao menos 2 caracteres.",
+    "any.required": "O campo Nome é obrigatório.",
+  }),
+  email: Joi.string().email().required().messages({
+    "string.email": "E-mail inválido.",
+    "any.required": "O campo E-mail é obrigatório.",
+  }),
+  password: Joi.string().min(6).required().messages({
+    "string.min": "Sua senha deve conter ao menos 6 caracteres.",
+    "any.required": "O campo Senha é obrigatória.",
+  }),
+  confPass: Joi.any().valid(Joi.ref("password")).required().messages({
+    "any.only": "As senhas não coincidem.",
+    "any.required": "A confirmação de senha é obrigatória.",
+  }),
+});
+
+module.exports = { userSchema };
+
+
+Arquivo: "/routes/productRoutes.js":
+
+const express = require("express");
+const router = express.Router();
+const productController = require("../controllers/productControllers");
+const validateProduct = require("../middlewares/products/validateProduct");
+const CheckID = require("../middlewares/CheckID");
+
+router.post("/", validateProduct, productController.create);
+router.put("/:id", CheckID, validateProduct, productController.update);
+router.delete("/:id", CheckID, productController.delete);
+router.get("/", productController.read);
+router.get("/:id", CheckID, productController.readID);
+
+module.exports = router;
+
+
+Arquivo: "/routes/userRoutes.js":
+
+const express = require("express");
+const router = express.Router();
+const userController = require("../controllers/userControllers");
+const requireAuth = require("../middlewares/auth/requireAuth");
+const validateUser = require("../middlewares/auth/validateUser");
+const {
+  getUser,
+  updateUser,
+  changePassword,
+  deleteUser,
+  searchUsers,
+} = require("../controllers/userControllers");
+
+router.post("/register", validateUser, userController.register);
+router.use(requireAuth);
+router.post("/login", validateUser, userController.login);
+router.get("/me", getUser);
+router.put("/me", updateUser);
+router.put("/me/password", changePassword);
+router.delete("/me", deleteUser);
+router.get("/users", searchUsers);
+
+module.exports = router;
+
+
+Arquivo: "/public/deleteAcc.html":
+
+     
+
+
+Arquivo: "/public/index.html":
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Área Pública - LojaTec</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="bg-blue-50 text-gray-800 min-h-screen flex flex-col justify-center items-center"
+  >
+    <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
+      <h1 class="text-2xl font-bold text-center mb-4">
+        🔓 Área Pública da LojaTec
+      </h1>
+      <p class="text-center text-sm mb-6">
+        Esta é uma seção pública da aplicação. Para acessar a área de controle
+        de estoque, é necessário estar autenticado. Entre em sua conta ou
+        cadastre-se!
+      </p>
+
+      <form id="loginForm" class="space-y-4">
+        <input
+          type="email"
+          id="email"
+          placeholder="E-mail"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <input
+          type="password"
+          id="senha"
+          placeholder="Senha"
+          required
+          class="w-full p-2 border rounded"
+        />
+        <button
+          type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+        >
+          Entrar
+        </button>
+      </form>
+
+      <p id="status" class="text-center mt-4 text-sm text-red-600"></p>
+
+      <div class="mt-6 text-center text-sm">
+        Ainda não tem uma conta?
+        <a href="register.html" class="text-blue-600 underline">
+          Registre-se
+        </a>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("email").value;
+          const senha = document.getElementById("senha").value;
+
+          const res = await fetch("http://localhost:3000/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, senha }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            // Salvar token no localStorage
+            localStorage.setItem("token", data.token);
+
+            // Redirecionar para a área privada
+            window.location.href = "../product.html"; // Ex: sua tela de produtos
+          } else {
+            document.getElementById("status").textContent =
+              data.error || "Erro ao autenticar.";
+          }
+        });
+    </script>
+  </body>
+</html>
+
+
+Arquivo: "/public/profile.html":
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meu Perfil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 text-gray-800 font-sans">
+    <div class="max-w-xl mx-auto p-6 bg-white shadow-md mt-10 rounded-lg">
+      <h1 class="text-2xl font-bold mb-6 text-center">👤 Meu Perfil</h1>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-1">Nome:</label>
+        <input id="name" class="input" />
+        <button onclick="updateName()" class="btn bg-green-500 mt-2">
+          Atualizar Nome
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <label class="block font-semibold mb-1">E-mail:</label>
+        <input id="email" class="input bg-gray-100" disabled />
+      </div>
+
+      <div class="space-y-2 mt-6">
+        <a href="updatePass.html" class="btn bg-yellow-500 block text-center"
+          >🔐 Alterar Senha</a
+        >
+        <a href="updateEmail.html" class="btn bg-purple-500 block text-center"
+          >📧 Alterar E-mail</a
+        >
+        <a href="deleteAcc.html" class="btn bg-red-600 block text-center"
+          >❌ Excluir Conta</a
+        >
+      </div>
+    </div>
+
+    <style>
+      .input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+        width: 100%;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        text-decoration: none;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth";
+
+      const headers = () => ({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      });
+
+      function loadProfile() {
+        fetch(`${API}/me`, {
+          method: "GET",
+          headers: headers(),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("name").value = data.name;
+            document.getElementById("email").value = data.email;
+          });
+      }
+
+      function updateName() {
+        const name = document.getElementById("name").value;
+
+        if (!name || name.trim().length < 2) {
+          alert("❌ O nome deve ter pelo menos 2 caracteres.");
+          return;
+        }
+
+        fetch(`${API}/me`, {
+          method: "PUT",
+          headers: headers(),
+          body: JSON.stringify({ name }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert(data.message || "Nome atualizado!");
+            loadProfile();
+          });
+      }
+
+      // Carrega os dados ao entrar na página
+      loadProfile();
+    </script>
+  </body>
+</html>
+
+
+Arquivo: "/public/register.html":
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cadastro - LojaTec</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-50 min-h-screen flex items-center justify-center">
+    <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-4 text-center">
+        📝 Criar Conta na LojaTec
+      </h1>
+
+      <form id="registerForm" class="space-y-4">
+        <input
+          type="text"
+          id="name"
+          placeholder="Seu name"
+          required
+          class="input"
+        />
+        <input
+          type="email"
+          id="email"
+          placeholder="Seu e-mail"
+          required
+          class="input"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Crie uma senha"
+          required
+          class="input"
+        />
+        <input
+          type="password"
+          id="confpass"
+          placeholder="Confirme a senha"
+          required
+          class="input"
+        />
+        <button type="submit" class="btn bg-green-600 hover:bg-green-700">
+          Registrar
+        </button>
+      </form>
+
+      <p id="status" class="text-sm text-center text-red-600 mt-3"></p>
+
+      <div class="mt-4 text-center text-sm">
+        Já tem conta?
+        <a href="index.html" class="text-blue-600 underline">Fazer login</a>
+      </div>
+    </div>
+
+    <style>
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
+      .btn {
+        width: 100%;
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/register";
+
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const name = document.getElementById("name").value;
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const confpass = document.getElementById("confpass").value;
+
+          const res = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password, confpass }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            alert("✅ Cadastro realizado com sucesso! Faça login.");
+            window.location.href = "index.html";
+          } else {
+            document.getElementById("status").textContent =
+              data.error || "Erro ao cadastrar.";
+          }
+        });
+    </script>
+  </body>
+</html>
+
+
+Arquivo: "/public/updateEmail.html":
+
+     
+
+
+Arquivo: "/public/updatePass.html":
+
+     
+
+
+Arquivo: "/models/users.js":
+
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+      select: false,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("User", userSchema);
+
+
+Arquivo: "/models/tec.js":
+
+const mongoose = require("mongoose"); // Importa a biblioteca do MongoDB.
+
+const tecSchema = new mongoose.Schema(
+  {
+    // Tabela: Schema; Campos: titulo, preco, descricao e status;
+    titulo: {
+      type: String,
+      required: true,
+    },
+    preco: {
+      type: Number,
+      required: true,
+    },
+    descricao: {
+      type: String,
+      required: true,
+    },
+    emEstoque: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Tec", tecSchema);
+
+
+Arquivo: "/middlewares/CheckID.js":
+
+const mongoose = require("mongoose");
+
+module.exports = (req, res, next) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: "ID inválido." });
+  }
+
+  next();
+};
+
+
+Arquivo: "/middlewares/token.js":
+
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token)
+    return res
+      .status(401)
+      .json({ error: "Acesso negado. Faça login para acessar." });
+
+  try {
+    const verified = jwt.verify(token, process.env.SECRET);
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(403).json({ error: "Token inválido." });
+  }
+};
+
+
+Arquivo: "/middlewares/auth/requireAuth.js":
+
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Token não fornecido." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.SECRET);
+    req.user = decoded; // Armazena dados do usuário no request
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Token inválido ou expirado." });
+  }
+};
+
+
+Arquivo: "/middlewares/auth/validateUser.js":
+
+const { userSchema } = require("../../validations/userSchema");
+
+module.exports = (req, res, next) => {
+  const { error } = userSchema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  next();
+};
+
+
+Arquivo: "/middlewares/products/validateProduct.js":
+
+const { productSchema } = require("../../validations/productSchema");
+
+module.exports = (req, res, next) => {
+  const body = { ...req.body };
+
+  // Limpa campos vazios (útil para update)
+  Object.keys(body).forEach((key) => {
+    if (body[key] === "") delete body[key];
+  });
+
+  // Valor padrão para emEstoque
+  if (body.emEstoque === undefined) {
+    body.emEstoque = true;
+  }
+
+  const { error } = productSchema.validate(body);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  req.body = body;
+  next();
+};
+
+
+Arquivo: "/controllers/productControllers.js":
+
+const tec = require("../models/tec");
+
+// Cria novos produtos;
+exports.create = async (req, res) => {
+  const { titulo, preco, descricao, emEstoque } = req.body;
+  try {
+    // Criação dos produtos;
+    const newProd = new tec({
+      titulo,
+      preco,
+      descricao,
+      emEstoque: emEstoque !== undefined ? emEstoque : true,
+    });
+    await newProd.save(); // Salve o novo produto no banco;
+    res.status(201).json({
+      message: "Produto criado com sucesso: ",
+      product: newProd,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao incluir novo produto." });
+  }
+};
+
+// Atualizar produtos já existentes por ID;
+exports.update = async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+
+  try {
+    const existentProd = await tec.findById(id);
+
+    if (!existentProd) {
+      return res.status(404).json({ error: "Produto não encontrado." });
+    }
+
+    // Campos obrigatórios validados pelo middleware
+
+    const updateProd = await tec.findByIdAndUpdate(id, data, {
+      new: true,
+    });
+
+    res.status(200).json({
+      message: "Produto atualizado com sucesso.",
+      product: updateProd,
+    });
+  } catch (error) {
+    console.error("Erro na atualização:", error);
+    res.status(500).json({ error: "Erro ao atualizar produto." });
+  }
+};
+
+// Deleta um produto por ID;
+exports.delete = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const products = await tec.findByIdAndDelete(id);
+    res.status(200).send("Tarefa deletada com sucesso!");
+  } catch (error) {
+    return res.status(400).json({ error: "Erro ao remover produto." });
+  }
+};
+
+// Lê todos os produtos da base;
+exports.read = async (req, res) => {
+  try {
+    // Busca todos os produtos disponíveis;
+    const products = await tec.find();
+
+    // Conta quantos produtos existem baseado na sua extensão;
+    const totalProd = products.length;
+
+    // Retorna com todos os produtos e o total existente;
+    res.status(200).json({
+      totalProd,
+      products,
+    });
+  } catch (error) {
+    return res
+      .status(400)
+      .json({ erro: "Erro ao ler os produtos da base de dados." });
+  }
+};
+
+// Lê um único produto pelo ID na base de dados;
+exports.readID = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const product = await tec.findById(id); // Busca o produto específico pelo ID;
+
+    if (!product) {
+      return res.status(404).json({ error: "Produto não encontrado." });
+    }
+
+    res.status(200).json({
+      product: product,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: "Erro ao ler produto." });
+  }
+};
+
+
+Arquivo: "/controllers/userControllers.js":
+
+require("dotenv").config();
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const users = require("../models/users");
+const mongoose = require("mongoose");
+
+function tokenGenerate(user) {
+  return jwt.sign(
+    { id: user._id, name: user.name, email: user.email },
+    process.env.SECRET,
+    { expiresIn: "3h" }
+  );
+}
+
+exports.register = async (req, res) => {
+  const { name, email, password, confPass } = req.body;
+
+  try {
+    const exists = await users.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ error: "Email já cadastrado. " });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hash = await bcrypt.hash(password, salt);
+    const hashi = await bcrypt.hash(confPass, salt);
+
+    newUser = new users({ name, email, password: hash });
+    await newUser.save();
+
+    res.status(201).json({ message: "Usuário registrado com sucesso! " });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao registrar usuário. " });
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await users.findOne({ email: email });
+    if (!user)
+      return res.status(404).json({ error: "Usuário não encontrado. " });
+
+    const validPass = await bcrypt.compare(password, user.password);
+    if (!validPass)
+      return res.status(401).json({ error: "password inválida. " });
+
+    const token = tokenGenerate(user);
+    res.status(200).json({ message: "Login bem-sucedido!", token });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao realizar user. " });
+  }
+};
+
+exports.getUser = async (req, res) => {
+  try {
+    const user = await users.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    res.status(200).json({ user });
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error);
+    res.status(500).json({ error: "Erro interno ao buscar usuário." });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  const { name } = req.body;
+
+  try {
+    const user = await users
+      .findByIdAndUpdate(
+        req.userId,
+        { name },
+        { new: true, runValidators: true }
+      )
+      .select("-password");
+
+    res.json({ message: "Dados atualizados.", user });
+  } catch (err) {
+    res.status(400).json({ error: "Erro ao atualizar dados." });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  const { password } = req.body;
+
+  if (!password || password.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "A nova Senha deve ter pelo menos 6 caracteres." });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+
+  await users.findByIdAndUpdate(req.userId, { password: hash });
+
+  res.json({ message: "Senha alterada com sucesso." });
+};
+
+exports.deleteUser = async (req, res) => {
+  await users.findByIdAndDelete(req.userId);
+  res.json({ message: "Conta excluída com sucesso." });
+};
+
+exports.searchUsers = async (req, res) => {
+  const { name } = req.query;
+
+  if (!name || name.length < 2) {
+    return res
+      .status(400)
+      .json({ error: "Informe ao menos 2 letras para buscar." });
+  }
+
+  const regex = new RegExp(name, "i");
+  const resultUsers = await users.find({ name: regex }).select("name email");
+
+  res.json({ results: resultUsers });
+};
+
+
+Arquivo: "/config/dbTec.js":
+
+const mongoose = require("mongoose"); // Importa a biblioteca do MongoDB;
+
+mongoose.set("strictQuery", true); // Chama a função Set da biblioteca mongoose e passa dois parâmetros;
+
+require("dotenv").config(); // Oculta os dados de acesso do DB
+
+// Credenciais do DB
+const dbUser = process.env.DB_USER;
+const dbPass = process.env.DB_PASS;
+
+async function main() {
+  // Conexão com o banco estabelecida
+  await mongoose.connect(
+    `mongodb+srv://${dbUser}:${dbPass}@projectapi.mkgylgr.mongodb.net/?retryWrites=true&w=majority&appName=ProjectAPI`
+  );
+
+  console.log("Conexão bem sucedida.");
+}
+main().catch((err) => console.log(err));
+
+module.exports = main;
+
+
+
+
+
+
+
+
+
+
+
