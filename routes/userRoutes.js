@@ -1,23 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const userController = require("../controllers/userControllers");
 const requireAuth = require("../middlewares/auth/requireAuth");
+const { registerSchema } = require("../validations/registerSchema");
+const { loginSchema } = require("../validations/loginSchema");
+const { updateUserSchema } = require("../validations/updateUserSchema");
+const { changePasswordSchema } = require("../validations/changePasswordSchema");
+const { searchUserSchema } = require("../validations/searchUserSchema");
 const validateUser = require("../middlewares/auth/validateUser");
 const {
-  getUser,
+  register,
+  login,
+  profile,
   updateUser,
   changePassword,
   deleteUser,
   searchUsers,
 } = require("../controllers/userControllers");
 
-router.post("/register", validateUser, userController.register);
+router.post("/register", validateUser(registerSchema), register);
+router.post("/login", validateUser(loginSchema), login);
+
 router.use(requireAuth);
-router.post("/login", validateUser, userController.login);
-router.get("/me", getUser);
-router.put("/me", updateUser);
-router.put("/me/password", changePassword);
+router.get("/me", profile);
+router.put("/me", validateUser(updateUserSchema), updateUser);
+router.put("/me/password", validateUser(changePasswordSchema), changePassword);
 router.delete("/me", deleteUser);
-router.get("/users", searchUsers);
+router.get("/users", validate(searchUserSchema), searchUsers);
 
 module.exports = router;

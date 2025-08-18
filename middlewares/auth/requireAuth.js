@@ -11,6 +11,7 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.SECRET);
+    req.userId = decoded.id;
     req.user = decoded; // Armazena dados do usuário no request
     next();
   } catch (err) {
