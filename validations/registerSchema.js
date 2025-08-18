@@ -21,3 +21,4 @@ const registerSchema = Joi.object({
 });
 
 module.exports = { registerSchema };
+

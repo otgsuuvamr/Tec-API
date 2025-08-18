@@ -1,0 +1,93 @@
+Correções:
+
+- req.userId inexistente
+
+No requireAuth.js você armazena req.user = decoded, mas no controller usa req.userId. Isso quebra em updateUser, changePassword e deleteUser.
+
+Correção: usar req.user.id (ou alterar o middleware para definir req.userId = decoded.id). 	--OK
+
+
+- login com validateUser
+
+O middleware de validação de usuário exige confPass mesmo no login. Isso impede login normal.
+
+Correção: criar um schema de validação separado para login (loginSchema). 	--OK
+
+
+- getUser no userControllers
+
+Retorna { user } mas no profile.html espera que os dados venham no root (data.name).
+
+Correção: retornar direto { name: user.name, email: user.email } ou ajustar o front.
+
+
+- register
+
+Está hashando duas vezes (password e confPass), mas só salva password. O hash do confPass é inútil.
+
+Correção: apenas valide se password === confPass (isso já está no Joi) e salve um único hash.
+
+
+- Validações de update
+
+updateUser não valida nome, pode salvar vazio.
+
+changePassword não exige senha atual.
+
+updateEmail e deleteAcc.html estão vazios e sem backend para token de confirmação.
+
+
+- Melhorias Imediatas
+Separar schemas de validação para registro, login e update. --OK
+
+Criar rota e lógica para alterar e-mail com envio de token. 
+
+Criar rota para alterar senha com confirmação da senha atual.
+
+Finalizar páginas updateEmail.html, updatePass.html, deleteAcc.html com JS para consumir API.
+
+Criar validação parcial no update (não obrigar todos campos).
+
+Padronizar retorno do backend (sempre { message, data }).
+
+
+- Melhorias Futuras
+Criar tratamento global de erros.
+
+Criar logs para auditoria de alterações/exclusões de usuário.
+
+Implementar paginação em listagem de usuários/produtos.
+
+Adicionar Rate Limit para login/registro.
+
+Melhorar segurança: expiração curta do token e refresh token.
+
+
+- Falta fazer para estar 100%
+Consertar bugs acima (especialmente req.userId e validações).
+
+Implementar alteração de email com token via e-mail.
+
+Implementar alteração de senha com senha atual e confirmação.
+
+Implementar exclusão de conta com confirmação visual e senha.
+
+Finalizar páginas de front para cada ação.
+
+Revisar dependências (token.js pode ser removido).
+
+
+- 3. Busca de usuários
+Na rota /users, hoje qualquer usuário autenticado pode buscar todos os outros.
+Se não houver controle, isso vira risco de privacidade.
+💡 Sugestão:
+
+Implementar paginação e filtros.
+
+Permitir busca por nome ou e-mail, mas não retornar senhas ou dados sensíveis.
+
+
+- 
+- 
+- 
+- 
