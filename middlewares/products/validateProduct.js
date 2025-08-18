@@ -9,8 +9,16 @@ module.exports = (req, res, next) => {
   });
 
   // Valor padrão para emEstoque
-  if (body.emEstoque === undefined) {
+  if (req.method === "POST" && body.emEstoque === undefined) {
     body.emEstoque = true;
+  }
+
+  if ("emEstoque" in body) {
+    if (typeof body.emEstoque === "string") {
+      body.emEstoque = body.emEstoque.toLowerCase() === "true";
+    } else {
+      body.emEstoque = Boolean(body.emEstoque);
+    }
   }
 
   const { error } = productSchema.validate(body);

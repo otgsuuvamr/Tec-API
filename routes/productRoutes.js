@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
+
 const productController = require("../controllers/productControllers");
 const validateProduct = require("../middlewares/products/validateProduct");
+
 const CheckID = require("../middlewares/CheckID");
 
 router.post("/", validateProduct, productController.create);

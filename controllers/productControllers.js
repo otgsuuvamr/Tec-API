@@ -1,11 +1,11 @@
-const tec = require("../models/tec");
+const Tec = require("../models/tec");
 
 // Cria novos produtos;
 exports.create = async (req, res) => {
   const { titulo, preco, descricao, emEstoque } = req.body;
   try {
     // Criação dos produtos;
-    const newProd = new tec({
+    const newProd = new Tec({
       titulo,
       preco,
       descricao,
@@ -27,7 +27,7 @@ exports.update = async (req, res) => {
   const data = req.body;
 
   try {
-    const existentProd = await tec.findById(id);
+    const existentProd = await Tec.findById(id);
 
     if (!existentProd) {
       return res.status(404).json({ error: "Produto não encontrado." });
@@ -35,7 +35,7 @@ exports.update = async (req, res) => {
 
     // Campos obrigatórios validados pelo middleware
 
-    const updateProd = await tec.findByIdAndUpdate(id, data, {
+    const updateProd = await Tec.findByIdAndUpdate(id, data, {
       new: true,
     });
 
@@ -53,7 +53,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
-    const products = await tec.findByIdAndDelete(id);
+    const products = await Tec.findByIdAndDelete(id);
     res.status(200).send("Tarefa deletada com sucesso!");
   } catch (error) {
     return res.status(400).json({ error: "Erro ao remover produto." });
@@ -64,7 +64,7 @@ exports.delete = async (req, res) => {
 exports.read = async (req, res) => {
   try {
     // Busca todos os produtos disponíveis;
-    const products = await tec.find();
+    const products = await Tec.find();
 
     // Conta quantos produtos existem baseado na sua extensão;
     const totalProd = products.length;
@@ -85,7 +85,7 @@ exports.read = async (req, res) => {
 exports.readID = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await tec.findById(id); // Busca o produto específico pelo ID;
+    const product = await Tec.findById(id); // Busca o produto específico pelo ID;
 
     if (!product) {
       return res.status(404).json({ error: "Produto não encontrado." });
