@@ -36,37 +36,6 @@ app.listen(PORT, () => {
 });
 
 
-Arquivo: "package.json":
-
-{
-  "name": "api-restufull",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "keywords": [],
-  "author": "Rosendoo",
-  "license": "ISC",
-  "description": "API - Loja de vendas",
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "joi": "^17.13.3",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.18.0",
-    "mongoose": "^8.17.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
-}
-
-
 Arquivo: "product.html":
 
 <!DOCTYPE html>
@@ -78,7 +47,34 @@ Arquivo: "product.html":
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-100 text-gray-800 font-sans">
-    <div class="max-w-4xl mx-auto p-5">
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-md px-6 py-3 flex justify-between items-center z-50">
+      <h1 class="text-xl font-bold text-blue-600">LojaTec</h1>
+      <div class="flex items-center gap-6">
+        <!-- Ícone de perfil -->
+        <a href="public/profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </a>
+        <!-- Botão sair -->
+        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">
+          Sair
+        </button>
+      </div>
+    </nav>
+    <script>
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    </script>
+    
+      </div>
+    </nav>
+
+    <!-- 🔹 Ajuste de espaçamento para não esconder o conteúdo -->
+    <div class="pt-20 max-w-4xl mx-auto p-5">
       <h1 class="text-3xl font-bold text-center mb-6">
         📦 Gerenciador de Produtos
       </h1>
@@ -88,7 +84,10 @@ Arquivo: "product.html":
         <input id="titulo" placeholder="Título" class="input" />
         <input id="preco" placeholder="Preço" class="input" />
         <input id="descricao" placeholder="Descrição" class="input" />
-        <input id="emEstoque" placeholder="emEstoque (Sim/Não)" class="input" />
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="emEstoque" checked />
+          <span>Em Estoque?</span>
+        </label>
       </div>
 
       <div class="flex gap-4 justify-center mb-6">
@@ -186,11 +185,7 @@ Arquivo: "product.html":
         const titulo = document.getElementById("titulo").value;
         const preco = parseFloat(document.getElementById("preco").value);
         const descricao = document.getElementById("descricao").value;
-        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque =
-          emEstoqueRaw === ""
-            ? undefined
-            : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque = document.getElementById("emEstoque").checked;
 
         fetch(API, {
           method: "POST",
@@ -202,8 +197,8 @@ Arquivo: "product.html":
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((err) => {
-            err.json().then((error) => {
+          .catch((error) => {
+            error.json().then((error) => {
               renderError("Erro: " + (error.error || "Erro desconhecido."));
             });
           });
@@ -214,11 +209,7 @@ Arquivo: "product.html":
         const titulo = document.getElementById("titulo").value;
         const precoRaw = document.getElementById("preco").value.trim();
         const descricao = document.getElementById("descricao").value;
-        const emEstoqueRaw = document.getElementById("emEstoque").value.trim();
-        const emEstoque =
-          emEstoqueRaw === ""
-            ? undefined
-            : emEstoqueRaw.toLowerCase() === "true";
+        const emEstoque = document.getElementById("emEstoque").checked;
 
         const payload = {};
         if (titulo) payload.titulo = titulo;
@@ -227,8 +218,7 @@ Arquivo: "product.html":
           if (!isNaN(preco)) payload.preco = preco;
         }
         if (descricao) payload.descricao = descricao;
-        if (emEstoque !== undefined || emEstoque !== null)
-          payload.emEstoque = emEstoque;
+        payload.emEstoque = emEstoque;
 
         fetch(API + id, {
           method: "PUT",
@@ -240,8 +230,8 @@ Arquivo: "product.html":
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch(async (err) => {
-            err.json().then((error) => {
+          .catch(async (error) => {
+            error.json().then((error) => {
               renderError("Erro: " + (error.error || "Erro desconhecido."));
             });
           });
@@ -251,12 +241,14 @@ Arquivo: "product.html":
         const id = document.getElementById("id").value;
         fetch(API + id, {
           method: "DELETE",
-          Authorization: "Bearer " + token,
+          headers: {
+            Authorization: "Bearer " + token,
+          },
         })
           .then((res) => res.text())
           .then((text) => renderResult({ message: text }))
-          .catch((err) => {
-            err.json().then((error) => {
+          .catch((error) => {
+            error.json().then((error) => {
               renderError("Erro: " + (error.error || "Erro desconhecido."));
             });
           });
@@ -268,13 +260,13 @@ Arquivo: "product.html":
 
         fetch(url, {
           headers: {
-            Authorization: "Bearer " + toekn,
+            Authorization: "Bearer " + token,
           },
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((err) => {
-            err.json().then((error) => {
+          .catch((error) => {
+            error.json().then((error) => {
               renderError("Erro: " + (error.error || "Erro desconhecido."));
             });
           });
@@ -284,19 +276,48 @@ Arquivo: "product.html":
 </html>
 
 
-Arquivo: ".gitignore":
+Arquivo: "/validations/loginSchema.js":
 
-/node_modules
-.env
-package-lock.json
+const Joi = require("joi");
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.base": "O e-mail deve ser um texto.",
+    "string.email": "O e-mail deve estar em um formato válido.",
+    "any.required": "O e-mail é obrigatório."
+  }),
+  password: Joi.string().min(6).required().messages({
+    "string.base": "A senha deve ser um texto.",
+    "string.min": "A senha deve ter pelo menos 6 caracteres.",
+    "any.required": "A senha é obrigatória."
+  })
+});
+
+module.exports = { loginSchema };
 
 
-Arquivo: ".env":
+Arquivo: "/validations/changePasswordSchema.js":
 
-DB_USER=gustavomarichi
-DB_PASS=ciFf6ijY1wv4Og7h
-SECRET=cfa95c8d85d8dc5db11a9e20bbfa85ef1293879f8a920e28076f6a58a13b0a53
-PORT=3000
+const Joi = require("joi");
+
+const changePasswordSchema = Joi.object({
+  currentPass: Joi.string().min(6).required().messages({
+    "string.base": "A senha atual deve ser um texto.",
+    "string.min": "A senha atual deve ter pelo menos 6 caracteres.",
+    "any.required": "A senha atual é obrigatória."
+  }),
+  newPass: Joi.string().min(6).required().messages({
+    "string.base": "A nova senha deve ser um texto.",
+    "string.min": "A nova senha deve ter pelo menos 6 caracteres.",
+    "any.required": "A nova senha é obrigatória."
+  }),
+  confNewPass: Joi.any().valid(Joi.ref("newPass")).required().messages({
+    "any.only": "A confirmação de senha não confere.",
+    "any.required": "A confirmação de senha é obrigatória."
+  })
+});
+
+module.exports = { changePasswordSchema };
 
 
 Arquivo: "/validations/productSchema.js":
@@ -322,11 +343,11 @@ const productSchema = Joi.object({
 module.exports = { productSchema };
 
 
-Arquivo: "/validations/userSchema.js":
+Arquivo: "/validations/registerSchema.js":
 
 const Joi = require("joi");
 
-const userSchema = Joi.object({
+const registerSchema = Joi.object({
   name: Joi.string().min(2).required().messages({
     "string-base": "Seu nome deve ser no formato de texto.",
     "string-min": "Seu nome deve conter ao menos 2 caracteres.",
@@ -346,15 +367,65 @@ const userSchema = Joi.object({
   }),
 });
 
-module.exports = { userSchema };
+module.exports = { registerSchema };
+
+
+Arquivo: "/validations/searchUserSchema.js":
+
+const Joi = require("joi");
+
+const searchUserSchema = Joi.object({
+  name: Joi.string().allow("", null),
+  email: Joi.string().email().allow("", null),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(10)
+});
+
+module.exports = { searchUserSchema };
+
+
+Arquivo: "/validations/updateEmailSchema.js":
+
+const Joi = require("joi");
+
+const updateEmailSchema = Joi.object({
+  newEmail: Joi.string().email().required().messages({
+    "string.email": "Informe um e-mail válido.",
+    "any.required": "O novo e-mail é obrigatório."
+  })
+});
+
+module.exports = { updateEmailSchema };
+
+
+Arquivo: "/validations/updateNameSchema.js":
+
+const Joi = require("joi");
+
+const updateUserSchema = Joi.object({
+  name: Joi.string().min(2).messages({
+    "string.base": "O nome deve ser um texto.",
+    "string.min": "O nome deve ter pelo menos 2 caracteres."
+  }),
+  email: Joi.string().email().messages({
+    "string.base": "O e-mail deve ser um texto.",
+    "string.email": "O e-mail deve estar em um formato válido."
+  })
+}).min(1).messages({
+  "object.min": "Informe ao menos um campo para atualização."
+});
+
+module.exports = { updateUserSchema };
 
 
 Arquivo: "/routes/productRoutes.js":
 
 const express = require("express");
 const router = express.Router();
+
 const productController = require("../controllers/productControllers");
 const validateProduct = require("../middlewares/products/validateProduct");
+
 const CheckID = require("../middlewares/CheckID");
 
 router.post("/", validateProduct, productController.create);
@@ -370,32 +441,144 @@ Arquivo: "/routes/userRoutes.js":
 
 const express = require("express");
 const router = express.Router();
-const userController = require("../controllers/userControllers");
+
 const requireAuth = require("../middlewares/auth/requireAuth");
+
+const { registerSchema } = require("../validations/registerSchema");
+const { loginSchema } = require("../validations/loginSchema");
+const { updateUserSchema } = require("../validations/updateNameSchema");
+const { updateEmailSchema } = require("../validations/updateEmailSchema");
+const { changePasswordSchema } = require("../validations/changePasswordSchema");
+const { searchUserSchema } = require("../validations/searchUserSchema");
+
 const validateUser = require("../middlewares/auth/validateUser");
+
 const {
-  getUser,
+  register,
+  login,
+  profile,
   updateUser,
+  updateEmail,
   changePassword,
   deleteUser,
   searchUsers,
 } = require("../controllers/userControllers");
 
-router.post("/register", validateUser, userController.register);
+router.post("/register", validateUser(registerSchema), register);
+router.post("/login", validateUser(loginSchema), login);
+
+
 router.use(requireAuth);
-router.post("/login", validateUser, userController.login);
-router.get("/me", getUser);
-router.put("/me", updateUser);
-router.put("/me/password", changePassword);
+router.get("/me", profile);
+router.put("/me", validateUser(updateUserSchema), updateUser);
+router.put("/me/email", validateUser(updateEmailSchema), updateEmail);
+router.put("/me/password", validateUser(changePasswordSchema), changePassword);
 router.delete("/me", deleteUser);
-router.get("/users", searchUsers);
+router.get("/users", validateUser(searchUserSchema), searchUsers);
 
 module.exports = router;
 
 
 Arquivo: "/public/deleteAcc.html":
 
-     
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Excluir Conta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 flex justify-center items-center min-h-screen">
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
+      </div>
+    </nav>
+
+    <div class="bg-white p-6 rounded shadow-md w-96">
+      <h1 class="text-xl font-bold mb-4 text-center text-red-600">
+        ❌ Excluir Conta
+      </h1>
+      <p class="text-center mb-4">
+        Tem certeza que deseja excluir sua conta? Esta ação não pode ser
+        desfeita.
+      </p>
+
+      <button onclick="deleteAcc()" class="btn bg-red-600 w-full">
+        Excluir Conta
+      </button>
+      <p id="status" class="text-sm text-center mt-3 text-red-600"></p>
+    </div>
+
+    <style>
+      .btn {
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/me";
+      const token = localStorage.getItem("token");
+
+      async function deleteAcc() {
+        if (!confirm("⚠️ Tem certeza que deseja excluir sua conta?")) return;
+
+        const res = await fetch(API, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token },
+        });
+
+        const data = await res.json();
+        alert(data.message || data.error);
+
+        if (res.ok) {
+          localStorage.removeItem("token");
+          window.location.href = "index.html";
+        }
+      }
+    </script>
+  </body>
+</html>
+
 
 
 Arquivo: "/public/index.html":
@@ -410,6 +593,47 @@ Arquivo: "/public/index.html":
   <body
     class="bg-blue-50 text-gray-800 min-h-screen flex flex-col justify-center items-center"
   >
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="public/profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
+      </div>
+    </nav>
+
     <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full">
       <h1 class="text-2xl font-bold text-center mb-4">
         🔓 Área Pública da LojaTec
@@ -430,7 +654,7 @@ Arquivo: "/public/index.html":
         />
         <input
           type="password"
-          id="senha"
+          id="password"
           placeholder="Senha"
           required
           class="w-full p-2 border rounded"
@@ -459,12 +683,12 @@ Arquivo: "/public/index.html":
         .addEventListener("submit", async (e) => {
           e.preventDefault();
           const email = document.getElementById("email").value;
-          const senha = document.getElementById("senha").value;
+          const password = document.getElementById("password").value;
 
           const res = await fetch("http://localhost:3000/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, senha }),
+            body: JSON.stringify({ email, password }),
           });
 
           const data = await res.json();
@@ -496,23 +720,66 @@ Arquivo: "/public/profile.html":
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-100 text-gray-800 font-sans">
-    <div class="max-w-xl mx-auto p-6 bg-white shadow-md mt-10 rounded-lg">
-      <h1 class="text-2xl font-bold mb-6 text-center">👤 Meu Perfil</h1>
-
-      <div class="mb-4">
-        <label class="block font-semibold mb-1">Nome:</label>
-        <input id="name" class="input" />
-        <button onclick="updateName()" class="btn bg-green-500 mt-2">
-          Atualizar Nome
+    <!-- 🔹 Navbar -->
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md px-6 py-3 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-6">
+        <!-- Ícone de perfil -->
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <!-- Botão sair -->
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
         </button>
       </div>
+    </nav>
 
-      <div class="mb-4">
-        <label class="block font-semibold mb-1">E-mail:</label>
-        <input id="email" class="input bg-gray-100" disabled />
+    <!-- 🔹 Conteúdo principal -->
+    <div class="max-w-xl mx-auto mt-28 p-6 bg-white shadow-md rounded-lg">
+      <h2 class="text-2xl font-bold mb-6 text-center">👤 Meu Perfil</h2>
+
+      <!-- Nome -->
+      <div class="mb-6">
+        <label class="block font-semibold mb-1">Nome:</label>
+        <div class="flex gap-2">
+          <input id="name" class="input flex-1" />
+          <button onclick="updateName()" class="btn bg-green-500">
+            Atualizar
+          </button>
+        </div>
       </div>
 
-      <div class="space-y-2 mt-6">
+      <!-- E-mail -->
+      <div class="mb-6">
+        <label class="block font-semibold mb-1">E-mail:</label>
+        <input id="email" class="input bg-gray-100 w-full" disabled />
+      </div>
+
+      <!-- Ações -->
+      <div class="space-y-3">
         <a href="updatePass.html" class="btn bg-yellow-500 block text-center"
           >🔐 Alterar Senha</a
         >
@@ -525,14 +792,13 @@ Arquivo: "/public/profile.html":
       </div>
     </div>
 
+    <!-- 🔹 Estilos globais -->
     <style>
       .input {
         padding: 0.5rem;
         border: 1px solid #ccc;
         border-radius: 0.375rem;
-        width: 100%;
       }
-
       .btn {
         padding: 0.5rem 1rem;
         color: white;
@@ -543,6 +809,7 @@ Arquivo: "/public/profile.html":
       }
     </style>
 
+    <!-- 🔹 Scripts -->
     <script>
       const API = "http://localhost:3000/auth";
 
@@ -551,15 +818,19 @@ Arquivo: "/public/profile.html":
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       });
 
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+
       function loadProfile() {
-        fetch(`${API}/me`, {
-          method: "GET",
-          headers: headers(),
-        })
+        fetch(`${API}/me`, { headers: headers() })
           .then((res) => res.json())
           .then((data) => {
-            document.getElementById("name").value = data.name;
-            document.getElementById("email").value = data.email;
+            // ajuste para acessar user corretamente
+            const user = data.user || data;
+            document.getElementById("name").value = user.name;
+            document.getElementById("email").value = user.email;
           });
       }
 
@@ -583,7 +854,7 @@ Arquivo: "/public/profile.html":
           });
       }
 
-      // Carrega os dados ao entrar na página
+      // Carrega os dados ao entrar
       loadProfile();
     </script>
   </body>
@@ -600,6 +871,47 @@ Arquivo: "/public/register.html":
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-50 min-h-screen flex items-center justify-center">
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="public/profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
+      </div>
+    </nav>
+
     <div class="bg-white shadow-md rounded p-6 w-full max-w-md">
       <h1 class="text-2xl font-bold mb-4 text-center">
         📝 Criar Conta na LojaTec
@@ -609,7 +921,7 @@ Arquivo: "/public/register.html":
         <input
           type="text"
           id="name"
-          placeholder="Seu name"
+          placeholder="Seu nome"
           required
           class="input"
         />
@@ -629,7 +941,7 @@ Arquivo: "/public/register.html":
         />
         <input
           type="password"
-          id="confpass"
+          id="confPass"
           placeholder="Confirme a senha"
           required
           class="input"
@@ -675,12 +987,12 @@ Arquivo: "/public/register.html":
           const name = document.getElementById("name").value;
           const email = document.getElementById("email").value;
           const password = document.getElementById("password").value;
-          const confpass = document.getElementById("confpass").value;
+          const confPass = document.getElementById("confPass").value;
 
           const res = await fetch(API, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password, confpass }),
+            body: JSON.stringify({ name, email, password, confPass }),
           });
 
           const data = await res.json();
@@ -700,15 +1012,246 @@ Arquivo: "/public/register.html":
 
 Arquivo: "/public/updateEmail.html":
 
-     
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Alterar E-mail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 flex justify-center items-center min-h-screen">
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
+      </div>
+    </nav>
+
+    <div class="bg-white p-6 rounded shadow-md w-96">
+      <h1 class="text-xl font-bold mb-4 text-center">📧 Alterar E-mail</h1>
+
+      <input
+        id="newEmail"
+        type="email"
+        placeholder="Novo e-mail"
+        class="input mb-3"
+      />
+
+      <button onclick="updateEmail()" class="btn bg-purple-600 w-full">
+        Salvar
+      </button>
+      <p id="status" class="text-sm text-center mt-3 text-green-600"></p>
+    </div>
+
+    <style>
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
+      .btn {
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/me/email";
+      const token = localStorage.getItem("token");
+
+      async function updateEmail() {
+        const newEmail = document.getElementById("newEmail").value;
+
+        const res = await fetch(API, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({ newEmail }),
+        });
+
+        const data = await res.json();
+        document.getElementById("status").textContent =
+          data.message || data.error;
+      }
+    </script>
+  </body>
+</html>
 
 
 Arquivo: "/public/updatePass.html":
 
-     
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Alterar Senha</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 flex justify-center items-center min-h-screen">
+    <!-- 🔹 Navbar -->
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+      <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+      </div>
+    </nav>
+
+    <!-- 🔹 Conteúdo -->
+    <div class="bg-white p-6 rounded shadow-md w-96 mt-28">
+      <h1 class="text-xl font-bold mb-4 text-center">🔐 Alterar Senha</h1>
+
+      <input
+        id="currentPass"
+        type="password"
+        placeholder="Senha atual"
+        class="input mb-3"
+      />
+      <input
+        id="newPass"
+        type="password"
+        placeholder="Nova senha"
+        class="input mb-3"
+      />
+      <input
+        id="confNewPass"
+        type="password"
+        placeholder="Confirme nova senha"
+        class="input mb-3"
+      />
+
+      <button onclick="updatePass()" class="btn bg-yellow-600 w-full">
+        Salvar
+      </button>
+
+      <!-- 🔹 status dinâmico -->
+      <p id="status" class="text-sm text-center mt-3 font-semibold"></p>
+    </div>
+
+    <style>
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
+      .btn {
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/me/password";
+      const token = localStorage.getItem("token");
+
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+
+      async function updatePass() {
+        const currentPass = document.getElementById("currentPass").value;
+        const newPass = document.getElementById("newPass").value;
+        const confNewPass = document.getElementById("confNewPass").value;
+
+        const res = await fetch(API, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({ currentPass, newPass, confNewPass }),
+        });
+
+        const data = await res.json();
+        const statusEl = document.getElementById("status");
+
+        if (res.ok) {
+          statusEl.textContent = data.message || "Senha alterada com sucesso!";
+          statusEl.className =
+            "text-sm text-center mt-3 font-semibold text-green-600";
+        } else {
+          statusEl.textContent = data.error || "Erro ao alterar senha.";
+          statusEl.className =
+            "text-sm text-center mt-3 font-semibold text-red-600";
+        }
+      }
+    </script>
+  </body>
+</html>
 
 
-Arquivo: "/models/users.js":
+Arquivo: "/models/User.js":
 
 const mongoose = require("mongoose");
 
@@ -827,6 +1370,7 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.SECRET);
+    
     req.user = decoded; // Armazena dados do usuário no request
     next();
   } catch (err) {
@@ -837,10 +1381,8 @@ module.exports = (req, res, next) => {
 
 Arquivo: "/middlewares/auth/validateUser.js":
 
-const { userSchema } = require("../../validations/userSchema");
-
-module.exports = (req, res, next) => {
-  const { error } = userSchema.validate(req.body);
+module.exports = (schema) => (req, res, next) => {
+  const { error } = schema.validate(req.body, { abortEarly: true });
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
@@ -863,8 +1405,16 @@ module.exports = (req, res, next) => {
   });
 
   // Valor padrão para emEstoque
-  if (body.emEstoque === undefined) {
+  if (req.method === "POST" && body.emEstoque === undefined) {
     body.emEstoque = true;
+  }
+
+  if ("emEstoque" in body) {
+    if (typeof body.emEstoque === "string") {
+      body.emEstoque = body.emEstoque.toLowerCase() === "true";
+    } else {
+      body.emEstoque = Boolean(body.emEstoque);
+    }
   }
 
   const { error } = productSchema.validate(body);
@@ -880,14 +1430,14 @@ module.exports = (req, res, next) => {
 
 Arquivo: "/controllers/productControllers.js":
 
-const tec = require("../models/tec");
+const Tec = require("../models/tec");
 
 // Cria novos produtos;
 exports.create = async (req, res) => {
   const { titulo, preco, descricao, emEstoque } = req.body;
   try {
     // Criação dos produtos;
-    const newProd = new tec({
+    const newProd = new Tec({
       titulo,
       preco,
       descricao,
@@ -909,7 +1459,7 @@ exports.update = async (req, res) => {
   const data = req.body;
 
   try {
-    const existentProd = await tec.findById(id);
+    const existentProd = await Tec.findById(id);
 
     if (!existentProd) {
       return res.status(404).json({ error: "Produto não encontrado." });
@@ -917,7 +1467,7 @@ exports.update = async (req, res) => {
 
     // Campos obrigatórios validados pelo middleware
 
-    const updateProd = await tec.findByIdAndUpdate(id, data, {
+    const updateProd = await Tec.findByIdAndUpdate(id, data, {
       new: true,
     });
 
@@ -935,7 +1485,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
-    const products = await tec.findByIdAndDelete(id);
+    const products = await Tec.findByIdAndDelete(id);
     res.status(200).send("Tarefa deletada com sucesso!");
   } catch (error) {
     return res.status(400).json({ error: "Erro ao remover produto." });
@@ -946,7 +1496,7 @@ exports.delete = async (req, res) => {
 exports.read = async (req, res) => {
   try {
     // Busca todos os produtos disponíveis;
-    const products = await tec.find();
+    const products = await Tec.find();
 
     // Conta quantos produtos existem baseado na sua extensão;
     const totalProd = products.length;
@@ -967,7 +1517,7 @@ exports.read = async (req, res) => {
 exports.readID = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await tec.findById(id); // Busca o produto específico pelo ID;
+    const product = await Tec.findById(id); // Busca o produto específico pelo ID;
 
     if (!product) {
       return res.status(404).json({ error: "Produto não encontrado." });
@@ -987,31 +1537,22 @@ Arquivo: "/controllers/userControllers.js":
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const users = require("../models/users");
+const User = require("../models/User");
 const mongoose = require("mongoose");
 
-function tokenGenerate(user) {
-  return jwt.sign(
-    { id: user._id, name: user.name, email: user.email },
-    process.env.SECRET,
-    { expiresIn: "3h" }
-  );
-}
-
 exports.register = async (req, res) => {
-  const { name, email, password, confPass } = req.body;
+  const { name, email, password } = req.body;
 
   try {
-    const exists = await users.findOne({ email });
+    const exists = await User.findOne({ email });
     if (exists) {
       return res.status(400).json({ error: "Email já cadastrado. " });
     }
 
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(password, salt);
-    const hashi = await bcrypt.hash(confPass, salt);
 
-    newUser = new users({ name, email, password: hash });
+    const newUser = new User({ name, email, password: hash });
     await newUser.save();
 
     res.status(201).json({ message: "Usuário registrado com sucesso! " });
@@ -1024,24 +1565,44 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await users.findOne({ email: email });
-    if (!user)
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email e senha são obrigatórios." });
+    }
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
       return res.status(404).json({ error: "Usuário não encontrado. " });
+    }
 
     const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass)
-      return res.status(401).json({ error: "password inválida. " });
+    if (!validPass) {
+      return res.status(401).json({ error: "Senha inválida. " });
+    }
 
-    const token = tokenGenerate(user);
-    res.status(200).json({ message: "Login bem-sucedido!", token });
+    const token = jwt.sign(
+      { id: user._id, name: user.name, email: user.email },
+      process.env.SECRET,
+      { expiresIn: "3h" }
+    );
+
+    res.status(200).json({
+      message: "Login bem-sucedido!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Erro ao realizar user. " });
+    console.error("Erro no login:", error);
+    res.status(500).json({ error: "Erro ao realizar login. " });
   }
 };
 
-exports.getUser = async (req, res) => {
+exports.profile = async (req, res) => {
   try {
-    const user = await users.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ error: "Usuário não encontrado." });
     }
@@ -1054,57 +1615,105 @@ exports.getUser = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-  const { name } = req.body;
+  const updates = req.body;
 
   try {
-    const user = await users
-      .findByIdAndUpdate(
-        req.userId,
-        { name },
-        { new: true, runValidators: true }
-      )
-      .select("-password");
+    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
-    res.json({ message: "Dados atualizados.", user });
-  } catch (err) {
-    res.status(400).json({ error: "Erro ao atualizar dados." });
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    res.json({ message: "Dados atualizados.", user: user });
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    res.status(500).json({ error: "Erro interno ao atualizar usuário." });
+  }
+};
+
+exports.updateEmail = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+
+    // Verifica se o email já está cadastrado
+    const exists = await User.findOne({ email: newEmail });
+    if (exists) {
+      return res.status(400).json({ error: "Este e-mail já está em uso." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { email: newEmail },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    res.json({ message: "E-mail atualizado com sucesso.", user });
+  } catch (error) {
+    console.error("Erro ao atualizar e-mail:", error);
+    res.status(500).json({ error: "Erro interno ao atualizar e-mail." });
   }
 };
 
 exports.changePassword = async (req, res) => {
-  const { password } = req.body;
+  try {
+    const { currentPass, newPass } = req.body;
 
-  if (!password || password.length < 6) {
-    return res
-      .status(400)
-      .json({ error: "A nova Senha deve ter pelo menos 6 caracteres." });
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    const validPass = await bcrypt.compare(currentPass, user.password);
+    if (!validPass) {
+      return res.status(400).json({ error: "Senha atual incorreta. " });
+    }
+
+    const hash = await bcrypt.hash(newPass, 12);
+    user.password = hash;
+    await user.save();
+
+    res.json({ message: "Senha alterada com sucesso." });
+  } catch (error) {
+    console.error("Erro ao alterar senha:", error);
+    res.status(500).json({ error: "Erro interno ao alterar senha." });
   }
-
-  const hash = await bcrypt.hash(password, 10);
-
-  await users.findByIdAndUpdate(req.userId, { password: hash });
-
-  res.json({ message: "Senha alterada com sucesso." });
 };
 
 exports.deleteUser = async (req, res) => {
-  await users.findByIdAndDelete(req.userId);
-  res.json({ message: "Conta excluída com sucesso." });
+  try {
+    await User.findByIdAndDelete(req.user.id);
+    res.json({ message: "Conta excluída com sucesso." });
+  } catch (error) {
+    console.error("Erro ao excluir conta:", error);
+    res.status(500).json({ error: "Erro interno ao excluir conta." });
+  }
 };
 
 exports.searchUsers = async (req, res) => {
-  const { name } = req.query;
+  try {
+    const { name, email, page = 1, limit = 10 } = req.query;
 
-  if (!name || name.length < 2) {
-    return res
-      .status(400)
-      .json({ error: "Informe ao menos 2 letras para buscar." });
+    const filters = {};
+    if (name) filters.name = { $regex: name, $options: "i" };
+    if (email) filters.email = { $regex: email, $options: "i" };
+
+    const usersResult = await User.find(filters)
+      .select("-password")
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.json({ total: usersResult.length, usersResult });
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    res.status(500).json({ error: "Erro interno ao buscar usuários." });
   }
-
-  const regex = new RegExp(name, "i");
-  const resultUsers = await users.find({ name: regex }).select("name email");
-
-  res.json({ results: resultUsers });
 };
 
 
@@ -1131,14 +1740,3 @@ async function main() {
 main().catch((err) => console.log(err));
 
 module.exports = main;
-
-
-
-
-
-
-
-
-
-
-

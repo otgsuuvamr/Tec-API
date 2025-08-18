@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Excluir Conta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-blue-100 flex justify-center items-center min-h-screen">
+    <nav
+      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
+    >
+    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <div class="flex items-center gap-4">
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+        </a>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
+
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
+      </div>
+    </nav>
+
+    <div class="bg-white p-6 rounded shadow-md w-96">
+      <h1 class="text-xl font-bold mb-4 text-center text-red-600">
+        ❌ Excluir Conta
+      </h1>
+      <p class="text-center mb-4">
+        Tem certeza que deseja excluir sua conta? Esta ação não pode ser
+        desfeita.
+      </p>
+
+      <button onclick="deleteAcc()" class="btn bg-red-600 w-full">
+        Excluir Conta
+      </button>
+      <p id="status" class="text-sm text-center mt-3 text-red-600"></p>
+    </div>
+
+    <style>
+      .btn {
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
+    </style>
+
+    <script>
+      const API = "http://localhost:3000/auth/me";
+      const token = localStorage.getItem("token");
+
+      async function deleteAcc() {
+        if (!confirm("⚠️ Tem certeza que deseja excluir sua conta?")) return;
+
+        const res = await fetch(API, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token },
+        });
+
+        const data = await res.json();
+        alert(data.message || data.error);
+
+        if (res.ok) {
+          localStorage.removeItem("token");
+          window.location.href = "index.html";
+        }
+      }
+    </script>
+  </body>
+</html>

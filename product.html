@@ -7,7 +7,34 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-100 text-gray-800 font-sans">
-    <div class="max-w-4xl mx-auto p-5">
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-md px-6 py-3 flex justify-between items-center z-50">
+      <h1 class="text-xl font-bold text-blue-600">LojaTec</h1>
+      <div class="flex items-center gap-6">
+        <!-- Ícone de perfil -->
+        <a href="public/profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </a>
+        <!-- Botão sair -->
+        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">
+          Sair
+        </button>
+      </div>
+    </nav>
+    <script>
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    </script>
+    
+      </div>
+    </nav>
+
+    <!-- 🔹 Ajuste de espaçamento para não esconder o conteúdo -->
+    <div class="pt-20 max-w-4xl mx-auto p-5">
       <h1 class="text-3xl font-bold text-center mb-6">
         📦 Gerenciador de Produtos
       </h1>
@@ -177,7 +204,7 @@
           headers: {
             Authorization: "Bearer " + token,
           },
-      })
+        })
           .then((res) => res.text())
           .then((text) => renderResult({ message: text }))
           .catch((error) => {

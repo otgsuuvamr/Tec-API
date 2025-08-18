@@ -98,6 +98,33 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.updateEmail = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+
+    // Verifica se o email já está cadastrado
+    const exists = await User.findOne({ email: newEmail });
+    if (exists) {
+      return res.status(400).json({ error: "Este e-mail já está em uso." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { email: newEmail },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    res.json({ message: "E-mail atualizado com sucesso.", user });
+  } catch (error) {
+    console.error("Erro ao atualizar e-mail:", error);
+    res.status(500).json({ error: "Erro interno ao atualizar e-mail." });
+  }
+};
+
 exports.changePassword = async (req, res) => {
   try {
     const { currentPass, newPass } = req.body;
