@@ -9,15 +9,36 @@
     <nav
       class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
     >
-      <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <a href="../product.html"
+        ><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a
+      >
       <div class="flex items-center gap-4">
-        <a href="profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        <a
+          href="profile.html"
+          class="text-gray-700 hover:text-blue-600"
+          title="Meu Perfil"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
         </a>
-        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">Sair</button>
+        <button
+          onclick="logout()"
+          class="text-red-600 hover:text-red-800 font-semibold"
+        >
+          Sair
+        </button>
         <script>
           function logout() {
             localStorage.removeItem("token");
@@ -30,13 +51,23 @@
     <div class="bg-white p-6 rounded shadow-md w-96">
       <h1 class="text-xl font-bold mb-4 text-center">📧 Alterar E-mail</h1>
 
-      <input id="newEmail" type="email" placeholder="Novo e-mail" class="input mb-3" />
+      <input
+        id="newEmail"
+        type="email"
+        placeholder="Novo e-mail"
+        class="input mb-3"
+      />
       <button onclick="requestEmailChange()" class="btn bg-purple-600 w-full">
         Solicitar Alteração
       </button>
 
       <div id="confirmSection" class="hidden mt-4">
-        <input id="code" type="text" placeholder="Digite o código recebido" class="input mb-3" />
+        <input
+          id="code"
+          type="text"
+          placeholder="Digite o código recebido"
+          class="input mb-3"
+        />
         <button onclick="confirmChange()" class="btn bg-green-600 w-full">
           Confirmar Alteração
         </button>
@@ -46,8 +77,19 @@
     </div>
 
     <style>
-      .input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 0.375rem; }
-      .btn { padding: 0.5rem; color: white; border: none; border-radius: 0.375rem; cursor: pointer; }
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
+      .btn {
+        padding: 0.5rem;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+      }
     </style>
 
     <script>
@@ -59,12 +101,16 @@
         const newEmail = document.getElementById("newEmail").value;
         const res = await fetch(API_REQUEST, {
           method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
           body: JSON.stringify({ newEmail }),
         });
 
         const data = await res.json();
-        document.getElementById("status").textContent = data.message || data.error;
+        document.getElementById("status").textContent =
+          data.message || data.error;
 
         if (res.ok) {
           document.getElementById("confirmSection").classList.remove("hidden");
@@ -75,13 +121,18 @@
         const code = document.getElementById("code").value;
         const res = await fetch(API_CONFIRM, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
           body: JSON.stringify({ code }),
         });
 
         const data = await res.json();
-        document.getElementById("status").textContent = data.message || data.error;
-        if (res.ok) setTimeout(() => (window.location.href = "profile.html"), 1500);
+        document.getElementById("status").textContent =
+          data.message || data.error;
+        if (res.ok)
+          setTimeout(() => (window.location.href = "profile.html"), 1500);
       }
     </script>
   </body>

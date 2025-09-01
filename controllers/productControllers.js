@@ -63,7 +63,8 @@ exports.delete = async (req, res) => {
 // Lê todos os produtos da base;
 exports.read = async (req, res) => {
   try {
-    const { titulo, minPreco, maxPreco, emEstoque, page, limit, sort, order } = req.query;
+    const { titulo, minPreco, maxPreco, emEstoque, page, limit, sort, order } =
+      req.query;
 
     const filters = {};
     if (titulo) filters.titulo = { $regex: titulo, $options: "i" };
@@ -92,7 +93,6 @@ exports.read = async (req, res) => {
     return res.status(500).json({ error: "Erro ao buscar produtos." });
   }
 };
-
 
 // Lê um único produto pelo ID na base de dados;
 exports.readID = async (req, res) => {

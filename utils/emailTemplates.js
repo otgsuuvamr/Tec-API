@@ -1,7 +1,7 @@
 function verificationCodeTemplate(userName, code, type) {
-    const action = type === "email" ? "alterar seu e-mail" : "alterar sua senha";
-  
-    return `
+  const action = type === "email" ? "alterar seu e-mail" : "alterar sua senha";
+
+  return `
     <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
       <h2 style="color: #2563eb; text-align: center;">🔐 Confirmação de Segurança</h2>
       <p>Olá <strong>${userName}</strong>,</p>
@@ -21,5 +21,5 @@ function verificationCodeTemplate(userName, code, type) {
       </p>
     </div>`;
 }
-  
+
 module.exports = { verificationCodeTemplate };

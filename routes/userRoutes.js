@@ -23,12 +23,11 @@ const {
   searchUsers,
   requestEmailChange,
   requestPasswordChange,
-  confirmChange
+  confirmChange,
 } = require("../controllers/userControllers");
 
 router.post("/register", validateUser(registerSchema), register);
 router.post("/login", validateUser(loginSchema), login);
-
 
 router.use(requireAuth);
 router.get("/me", profile);

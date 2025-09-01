@@ -158,7 +158,9 @@ exports.deleteUser = async (req, res) => {
     const { password } = req.body;
 
     if (!password) {
-      return res.status(400).json({ error: "A senha é obrigatória para excluir a conta." });
+      return res
+        .status(400)
+        .json({ error: "A senha é obrigatória para excluir a conta." });
     }
 
     const user = await User.findById(req.user.id).select("+password");
@@ -182,7 +184,14 @@ exports.deleteUser = async (req, res) => {
 
 exports.searchUsers = async (req, res) => {
   try {
-    const { name, email, page = 1, limit = 10, sort = "createdAt", order = "asc" } = req.query;
+    const {
+      name,
+      email,
+      page = 1,
+      limit = 10,
+      sort = "createdAt",
+      order = "asc",
+    } = req.query;
 
     const filters = {};
     if (name) filters.name = { $regex: name, $options: "i" };
@@ -214,7 +223,8 @@ exports.requestEmailChange = async (req, res) => {
     const { newEmail } = req.body;
     const user = await User.findById(req.user.id);
 
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+    if (!user)
+      return res.status(404).json({ error: "Usuário não encontrado." });
 
     // Gerar token de 6 dígitos
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -246,10 +256,12 @@ exports.requestPasswordChange = async (req, res) => {
   try {
     const { newPass, currentPass } = req.body;
     const user = await User.findById(req.user.id).select("+password");
-    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+    if (!user)
+      return res.status(404).json({ error: "Usuário não encontrado." });
 
     const validPass = await bcrypt.compare(currentPass, user.password);
-    if (!validPass) return res.status(400).json({ error: "Senha atual incorreta." });
+    if (!validPass)
+      return res.status(400).json({ error: "Senha atual incorreta." });
 
     const hash = await bcrypt.hash(newPass, 12);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -267,7 +279,6 @@ exports.requestPasswordChange = async (req, res) => {
       `Seu código de confirmação: ${code} (válido por 1 minuto).`,
       verificationCodeTemplate(user.name, code, "password")
     );
-    
 
     res.json({ message: "Código de verificação enviado para seu e-mail." });
   } catch (error) {
@@ -289,14 +300,22 @@ exports.confirmChange = async (req, res) => {
 
     // Aplica alteração
     if (tokenData.type === "email") {
-      await User.findByIdAndUpdate(req.user.id, { email: tokenData.payload.newEmail });
+      await User.findByIdAndUpdate(req.user.id, {
+        email: tokenData.payload.newEmail,
+      });
     } else if (tokenData.type === "password") {
-      await User.findByIdAndUpdate(req.user.id, { password: tokenData.payload.password });
+      await User.findByIdAndUpdate(req.user.id, {
+        password: tokenData.payload.password,
+      });
     }
 
     await tokenData.deleteOne();
 
-    res.json({ message: `${tokenData.type === "email" ? "E-mail" : "Senha"} alterado com sucesso.` });
+    res.json({
+      message: `${
+        tokenData.type === "email" ? "E-mail" : "Senha"
+      } alterado com sucesso.`,
+    });
   } catch (error) {
     res.status(500).json({ error: "Erro ao confirmar código." });
   }

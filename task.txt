@@ -1,38 +1,15 @@
-Correções:
-
-- Melhorias Imediatas
-
-Criar rota e lógica para alterar e-mail com envio de token. 
-
-Criar rota para alterar senha com confirmação da senha atual.
-
-Finalizar páginas updateEmail.html, updatePass.html, deleteAcc.html com JS para consumir API.
-
-Padronizar retorno do backend (sempre { message, data }).
-
-
 - Melhorias Futuras
 Criar tratamento global de erros.
 
 Criar logs para auditoria de alterações/exclusões de usuário.
 
-Implementar paginação em listagem de usuários/produtos.
-
 Adicionar Rate Limit para login/registro.
 
 Melhorar segurança: expiração curta do token e refresh token.
 
-
 - Falta fazer para estar 100%
 
-Implementar alteração de email com token via e-mail.
-
-Implementar alteração de senha com senha atual e confirmação.
-
-Implementar exclusão de conta com confirmação visual e senha.
-
 Revisar dependências (token.js pode ser removido).
-
 
 - 3. Busca de usuários
 Na rota /users, hoje qualquer usuário autenticado pode buscar todos os outros.
@@ -42,9 +19,3 @@ Se não houver controle, isso vira risco de privacidade.
 Implementar paginação e filtros.
 
 Permitir busca por nome ou e-mail, mas não retornar senhas ou dados sensíveis.
-
-
-- 
-- 
-- 
-- 

@@ -13,8 +13,8 @@ async function sendEmail(to, subject, text, html = null) {
     from: `"LojaTec" <${process.env.EMAIL_USER}>`,
     to,
     subject,
-    text,  // fallback para clientes de e-mail que não suportam HTML
-    html,  // corpo em HTML
+    text, // fallback para clientes de e-mail que não suportam HTML
+    html, // corpo em HTML
   });
 }
 
