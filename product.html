@@ -216,20 +216,26 @@
 
       function ReadProd() {
         const id = document.getElementById("id").value;
-        const url = id ? API + id : API;
+        const titulo = document.getElementById("titulo").value;
+        const preco = document.getElementById("preco").value;
+
+        let url = API;
+        const params = new URLSearchParams();
+
+        if (id) url += id;
+        else {
+          if (titulo) params.append("titulo", titulo);
+          if (preco) params.append("maxPreco", preco);
+        }
+
+        if (params.toString()) url += `?${params.toString()}`;
 
         fetch(url, {
-          headers: {
-            Authorization: "Bearer " + token,
-          },
+          headers: { Authorization: "Bearer " + token },
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((error) => {
-            error.json().then((error) => {
-              renderError("Erro: " + (error.error || "Erro desconhecido."));
-            });
-          });
+          .catch((error) => console.error(error));
       }
     </script>
   </body>

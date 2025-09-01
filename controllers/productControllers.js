@@ -63,23 +63,36 @@ exports.delete = async (req, res) => {
 // Lê todos os produtos da base;
 exports.read = async (req, res) => {
   try {
-    // Busca todos os produtos disponíveis;
-    const products = await Tec.find();
+    const { titulo, minPreco, maxPreco, emEstoque, page, limit, sort, order } = req.query;
 
-    // Conta quantos produtos existem baseado na sua extensão;
-    const totalProd = products.length;
+    const filters = {};
+    if (titulo) filters.titulo = { $regex: titulo, $options: "i" };
+    if (minPreco || maxPreco) {
+      filters.preco = {};
+      if (minPreco) filters.preco.$gte = minPreco;
+      if (maxPreco) filters.preco.$lte = maxPreco;
+    }
+    if (emEstoque !== undefined) filters.emEstoque = emEstoque;
 
-    // Retorna com todos os produtos e o total existente;
+    const total = await Tec.countDocuments(filters);
+
+    const products = await Tec.find(filters)
+      .sort({ [sort]: order === "asc" ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
     res.status(200).json({
-      totalProd,
+      page,
+      limit,
+      total,
       products,
     });
   } catch (error) {
-    return res
-      .status(400)
-      .json({ erro: "Erro ao ler os produtos da base de dados." });
+    console.error("Erro ao buscar produtos:", error);
+    return res.status(500).json({ error: "Erro ao buscar produtos." });
   }
 };
+
 
 // Lê um único produto pelo ID na base de dados;
 exports.readID = async (req, res) => {

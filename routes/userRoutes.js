@@ -21,6 +21,9 @@ const {
   changePassword,
   deleteUser,
   searchUsers,
+  requestEmailChange,
+  requestPasswordChange,
+  confirmChange
 } = require("../controllers/userControllers");
 
 router.post("/register", validateUser(registerSchema), register);
@@ -34,5 +37,10 @@ router.put("/me/email", validateUser(updateEmailSchema), updateEmail);
 router.put("/me/password", validateUser(changePasswordSchema), changePassword);
 router.delete("/me", deleteUser);
 router.get("/users", validateUser(searchUserSchema), searchUsers);
+
+router.put("/me/email/request", requireAuth, requestEmailChange);
+router.put("/me/password/request", requireAuth, requestPasswordChange);
+
+router.post("/me/confirm-change", requireAuth, confirmChange);
 
 module.exports = router;

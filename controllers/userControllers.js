@@ -3,6 +3,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const Token = require("../models/Token");
+const sendEmail = require("../utils/sendEmail");
+const { verificationCodeTemplate } = require("../utils/emailTemplates");
 
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -152,6 +155,23 @@ exports.changePassword = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: "A senha é obrigatória para excluir a conta." });
+    }
+
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    // Verifica senha
+    const validPass = await bcrypt.compare(password, user.password);
+    if (!validPass) {
+      return res.status(401).json({ error: "Senha incorreta." });
+    }
+
     await User.findByIdAndDelete(req.user.id);
     res.json({ message: "Conta excluída com sucesso." });
   } catch (error) {
@@ -162,20 +182,122 @@ exports.deleteUser = async (req, res) => {
 
 exports.searchUsers = async (req, res) => {
   try {
-    const { name, email, page = 1, limit = 10 } = req.query;
+    const { name, email, page = 1, limit = 10, sort = "createdAt", order = "asc" } = req.query;
 
     const filters = {};
     if (name) filters.name = { $regex: name, $options: "i" };
     if (email) filters.email = { $regex: email, $options: "i" };
 
+    const total = await User.countDocuments(filters);
+
     const usersResult = await User.find(filters)
       .select("-password")
+      .sort({ [sort]: order === "desc" ? -1 : 1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
-    res.json({ total: usersResult.length, usersResult });
+    res.json({
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      users: usersResult,
+    });
   } catch (error) {
     console.error("Erro ao buscar usuários:", error);
     res.status(500).json({ error: "Erro interno ao buscar usuários." });
+  }
+};
+
+// Solicitar alteração de e-mail
+exports.requestEmailChange = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    // Gerar token de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Salvar no banco
+    await Token.create({
+      userId: user._id,
+      code,
+      type: "email",
+      payload: { newEmail },
+    });
+
+    // Enviar por e-mail
+    await sendEmail(
+      user.email,
+      "Confirmação de Alteração de E-mail - LojaTec",
+      `Seu código de confirmação: ${code} (válido por 1 minuto).`,
+      verificationCodeTemplate(user.name, code, "email")
+    );
+
+    res.json({ message: "Código de verificação enviado para seu e-mail." });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao solicitar alteração de e-mail." });
+  }
+};
+
+// Solicitar alteração de senha
+exports.requestPasswordChange = async (req, res) => {
+  try {
+    const { newPass, currentPass } = req.body;
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    const validPass = await bcrypt.compare(currentPass, user.password);
+    if (!validPass) return res.status(400).json({ error: "Senha atual incorreta." });
+
+    const hash = await bcrypt.hash(newPass, 12);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await Token.create({
+      userId: user._id,
+      code,
+      type: "password",
+      payload: { password: hash },
+    });
+
+    await sendEmail(
+      user.email,
+      "Confirmação de Alteração de Senha - LojaTec",
+      `Seu código de confirmação: ${code} (válido por 1 minuto).`,
+      verificationCodeTemplate(user.name, code, "password")
+    );
+    
+
+    res.json({ message: "Código de verificação enviado para seu e-mail." });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao solicitar alteração de senha." });
+  }
+};
+
+// Confirmar token e aplicar mudança
+exports.confirmChange = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const tokenData = await Token.findOne({ code, userId: req.user.id });
+
+    if (!tokenData) return res.status(400).json({ error: "Código inválido." });
+    if (tokenData.expiresAt < Date.now()) {
+      await tokenData.deleteOne();
+      return res.status(400).json({ error: "Código expirado." });
+    }
+
+    // Aplica alteração
+    if (tokenData.type === "email") {
+      await User.findByIdAndUpdate(req.user.id, { email: tokenData.payload.newEmail });
+    } else if (tokenData.type === "password") {
+      await User.findByIdAndUpdate(req.user.id, { password: tokenData.payload.password });
+    }
+
+    await tokenData.deleteOne();
+
+    res.json({ message: `${tokenData.type === "email" ? "E-mail" : "Senha"} alterado com sucesso.` });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao confirmar código." });
   }
 };

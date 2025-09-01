@@ -32,7 +32,7 @@ app.get("/", (req, res) => {
 // Inicia o servidor na porta estabelecida;
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando`);
+  console.log(`Servidor rodando.`);
 });
 
 
@@ -66,7 +66,7 @@ Arquivo: "product.html":
     <script>
       function logout() {
         localStorage.removeItem("token");
-        window.location.href = "index.html";
+        window.location.href = "/public/index.html";
       }
     </script>
     
@@ -256,20 +256,26 @@ Arquivo: "product.html":
 
       function ReadProd() {
         const id = document.getElementById("id").value;
-        const url = id ? API + id : API;
+        const titulo = document.getElementById("titulo").value;
+        const preco = document.getElementById("preco").value;
+
+        let url = API;
+        const params = new URLSearchParams();
+
+        if (id) url += id;
+        else {
+          if (titulo) params.append("titulo", titulo);
+          if (preco) params.append("maxPreco", preco);
+        }
+
+        if (params.toString()) url += `?${params.toString()}`;
 
         fetch(url, {
-          headers: {
-            Authorization: "Bearer " + token,
-          },
+          headers: { Authorization: "Bearer " + token },
         })
           .then((res) => res.json())
           .then(renderResult)
-          .catch((error) => {
-            error.json().then((error) => {
-              renderError("Erro: " + (error.error || "Erro desconhecido."));
-            });
-          });
+          .catch((error) => console.error(error));
       }
     </script>
   </body>
@@ -343,6 +349,24 @@ const productSchema = Joi.object({
 module.exports = { productSchema };
 
 
+Arquivo: "/validations/productSearchSchema.js":
+
+const Joi = require("joi");
+
+const productSearchSchema = Joi.object({
+  titulo: Joi.string().allow("", null),
+  minPreco: Joi.number().positive(),
+  maxPreco: Joi.number().positive(),
+  emEstoque: Joi.boolean(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(50).default(10),
+  sort: Joi.string().valid("titulo", "preco", "createdAt").default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("asc"),
+});
+
+module.exports = { productSearchSchema };
+
+
 Arquivo: "/validations/registerSchema.js":
 
 const Joi = require("joi");
@@ -376,9 +400,11 @@ const Joi = require("joi");
 
 const searchUserSchema = Joi.object({
   name: Joi.string().allow("", null),
-  email: Joi.string().email().allow("", null),
+  email: Joi.string().allow("", null), // removi .email() para permitir busca parcial
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(50).default(10)
+  limit: Joi.number().integer().min(1).max(50).default(10),
+  sort: Joi.string().valid("name", "email", "createdAt").default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("asc"),
 });
 
 module.exports = { searchUserSchema };
@@ -418,6 +444,61 @@ const updateUserSchema = Joi.object({
 module.exports = { updateUserSchema };
 
 
+Arquivo: "/utils/emailTemplates.js":
+
+function verificationCodeTemplate(userName, code, type) {
+    const action = type === "email" ? "alterar seu e-mail" : "alterar sua senha";
+  
+    return `
+    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+      <h2 style="color: #2563eb; text-align: center;">🔐 Confirmação de Segurança</h2>
+      <p>Olá <strong>${userName}</strong>,</p>
+      <p>Você solicitou ${action} na sua conta LojaTec. Para confirmar, use o código abaixo:</p>
+      
+      <div style="text-align: center; margin: 20px 0;">
+        <span style="font-size: 28px; font-weight: bold; letter-spacing: 3px; color: #111827;">${code}</span>
+      </div>
+  
+      <p style="color: #dc2626; font-weight: bold;">⚠️ Este código expira em 1 minuto.</p>
+  
+      <p style="font-size: 12px; color: #6b7280;">Se você não solicitou esta alteração, ignore este e-mail ou altere sua senha para manter sua conta segura.</p>
+  
+      <hr style="margin: 20px 0;">
+      <p style="text-align: center; font-size: 12px; color: #9ca3af;">
+        LojaTec © ${new Date().getFullYear()} • Este é um e-mail automático, não responda.
+      </p>
+    </div>`;
+}
+  
+module.exports = { verificationCodeTemplate };
+
+
+
+Arquivo: "/utils/sendEmail.js":
+
+const nodemailer = require("nodemailer");
+
+async function sendEmail(to, subject, text, html = null) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"LojaTec" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    text,  // fallback para clientes de e-mail que não suportam HTML
+    html,  // corpo em HTML
+  });
+}
+
+module.exports = sendEmail;
+
+
 Arquivo: "/routes/productRoutes.js":
 
 const express = require("express");
@@ -425,13 +506,14 @@ const router = express.Router();
 
 const productController = require("../controllers/productControllers");
 const validateProduct = require("../middlewares/products/validateProduct");
+const validateProductSearch = require("../middlewares/products/validateProductSearch");
 
 const CheckID = require("../middlewares/CheckID");
 
 router.post("/", validateProduct, productController.create);
 router.put("/:id", CheckID, validateProduct, productController.update);
 router.delete("/:id", CheckID, productController.delete);
-router.get("/", productController.read);
+router.get("/", validateProductSearch, productController.read);
 router.get("/:id", CheckID, productController.readID);
 
 module.exports = router;
@@ -462,6 +544,9 @@ const {
   changePassword,
   deleteUser,
   searchUsers,
+  requestEmailChange,
+  requestPasswordChange,
+  confirmChange
 } = require("../controllers/userControllers");
 
 router.post("/register", validateUser(registerSchema), register);
@@ -476,6 +561,11 @@ router.put("/me/password", validateUser(changePasswordSchema), changePassword);
 router.delete("/me", deleteUser);
 router.get("/users", validateUser(searchUserSchema), searchUsers);
 
+router.put("/me/email/request", requireAuth, requestEmailChange);
+router.put("/me/password/request", requireAuth, requestPasswordChange);
+
+router.post("/me/confirm-change", requireAuth, confirmChange);
+
 module.exports = router;
 
 
@@ -489,38 +579,16 @@ Arquivo: "/public/deleteAcc.html":
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-100 flex justify-center items-center min-h-screen">
-    <nav
-      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
-    >
-    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50">
+      <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
       <div class="flex items-center gap-4">
-        <a
-          href="profile.html"
-          class="text-gray-700 hover:text-blue-600"
-          title="Meu Perfil"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-7 h-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
+        <a href="profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </a>
-        <button
-          onclick="logout()"
-          class="text-red-600 hover:text-red-800 font-semibold"
-        >
-          Sair
-        </button>
-
+        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">Sair</button>
         <script>
           function logout() {
             localStorage.removeItem("token");
@@ -535,10 +603,10 @@ Arquivo: "/public/deleteAcc.html":
         ❌ Excluir Conta
       </h1>
       <p class="text-center mb-4">
-        Tem certeza que deseja excluir sua conta? Esta ação não pode ser
-        desfeita.
+        Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.
       </p>
 
+      <input type="password" id="password" placeholder="Digite sua senha" class="input mb-3" />
       <button onclick="deleteAcc()" class="btn bg-red-600 w-full">
         Excluir Conta
       </button>
@@ -546,6 +614,12 @@ Arquivo: "/public/deleteAcc.html":
     </div>
 
     <style>
+      .input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 0.375rem;
+      }
       .btn {
         padding: 0.5rem;
         color: white;
@@ -562,23 +636,32 @@ Arquivo: "/public/deleteAcc.html":
       async function deleteAcc() {
         if (!confirm("⚠️ Tem certeza que deseja excluir sua conta?")) return;
 
+        const password = document.getElementById("password").value;
+        if (!password) {
+          document.getElementById("status").textContent = "Digite sua senha para continuar.";
+          return;
+        }
+
         const res = await fetch(API, {
           method: "DELETE",
-          headers: { Authorization: "Bearer " + token },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token 
+          },
+          body: JSON.stringify({ password }),
         });
 
         const data = await res.json();
-        alert(data.message || data.error);
+        document.getElementById("status").textContent = data.message || data.error;
 
         if (res.ok) {
           localStorage.removeItem("token");
-          window.location.href = "index.html";
+          setTimeout(() => (window.location.href = "index.html"), 1500);
         }
       }
     </script>
   </body>
 </html>
-
 
 
 Arquivo: "/public/index.html":
@@ -618,19 +701,7 @@ Arquivo: "/public/index.html":
             />
           </svg>
         </a>
-        <button
-          onclick="logout()"
-          class="text-red-600 hover:text-red-800 font-semibold"
-        >
-          Sair
-        </button>
 
-        <script>
-          function logout() {
-            localStorage.removeItem("token");
-            window.location.href = "index.html";
-          }
-        </script>
       </div>
     </nav>
 
@@ -1023,35 +1094,15 @@ Arquivo: "/public/updateEmail.html":
     <nav
       class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
     >
-    <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
+      <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
       <div class="flex items-center gap-4">
-        <a
-          href="profile.html"
-          class="text-gray-700 hover:text-blue-600"
-          title="Meu Perfil"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-7 h-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
+        <a href="profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </a>
-        <button
-          onclick="logout()"
-          class="text-red-600 hover:text-red-800 font-semibold"
-        >
-          Sair
-        </button>
-
+        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">Sair</button>
         <script>
           function logout() {
             localStorage.removeItem("token");
@@ -1064,54 +1115,58 @@ Arquivo: "/public/updateEmail.html":
     <div class="bg-white p-6 rounded shadow-md w-96">
       <h1 class="text-xl font-bold mb-4 text-center">📧 Alterar E-mail</h1>
 
-      <input
-        id="newEmail"
-        type="email"
-        placeholder="Novo e-mail"
-        class="input mb-3"
-      />
-
-      <button onclick="updateEmail()" class="btn bg-purple-600 w-full">
-        Salvar
+      <input id="newEmail" type="email" placeholder="Novo e-mail" class="input mb-3" />
+      <button onclick="requestEmailChange()" class="btn bg-purple-600 w-full">
+        Solicitar Alteração
       </button>
+
+      <div id="confirmSection" class="hidden mt-4">
+        <input id="code" type="text" placeholder="Digite o código recebido" class="input mb-3" />
+        <button onclick="confirmChange()" class="btn bg-green-600 w-full">
+          Confirmar Alteração
+        </button>
+      </div>
+
       <p id="status" class="text-sm text-center mt-3 text-green-600"></p>
     </div>
 
     <style>
-      .input {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 0.375rem;
-      }
-      .btn {
-        padding: 0.5rem;
-        color: white;
-        border: none;
-        border-radius: 0.375rem;
-        cursor: pointer;
-      }
+      .input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 0.375rem; }
+      .btn { padding: 0.5rem; color: white; border: none; border-radius: 0.375rem; cursor: pointer; }
     </style>
 
     <script>
-      const API = "http://localhost:3000/auth/me/email";
+      const API_REQUEST = "http://localhost:3000/auth/me/email/request";
+      const API_CONFIRM = "http://localhost:3000/auth/me/confirm-change";
       const token = localStorage.getItem("token");
 
-      async function updateEmail() {
+      async function requestEmailChange() {
         const newEmail = document.getElementById("newEmail").value;
-
-        const res = await fetch(API, {
+        const res = await fetch(API_REQUEST, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + token,
-          },
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
           body: JSON.stringify({ newEmail }),
         });
 
         const data = await res.json();
-        document.getElementById("status").textContent =
-          data.message || data.error;
+        document.getElementById("status").textContent = data.message || data.error;
+
+        if (res.ok) {
+          document.getElementById("confirmSection").classList.remove("hidden");
+        }
+      }
+
+      async function confirmChange() {
+        const code = document.getElementById("code").value;
+        const res = await fetch(API_CONFIRM, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ code }),
+        });
+
+        const data = await res.json();
+        document.getElementById("status").textContent = data.message || data.error;
+        if (res.ok) setTimeout(() => (window.location.href = "profile.html"), 1500);
       }
     </script>
   </body>
@@ -1128,122 +1183,84 @@ Arquivo: "/public/updatePass.html":
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-blue-100 flex justify-center items-center min-h-screen">
-    <!-- 🔹 Navbar -->
-    <nav
-      class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50"
-    >
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-md p-4 flex justify-between items-center z-50">
       <a href="../product.html"><h1 class="text-xl font-bold text-blue-600">LojaTec</h1></a>
       <div class="flex items-center gap-4">
-        <a
-          href="profile.html"
-          class="text-gray-700 hover:text-blue-600"
-          title="Meu Perfil"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-7 h-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
+        <a href="profile.html" class="text-gray-700 hover:text-blue-600" title="Meu Perfil">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5.121 17.804A9 9 0 1118.879 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </a>
-        <button
-          onclick="logout()"
-          class="text-red-600 hover:text-red-800 font-semibold"
-        >
-          Sair
-        </button>
+        <button onclick="logout()" class="text-red-600 hover:text-red-800 font-semibold">Sair</button>
+        <script>
+          function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+          }
+        </script>
       </div>
     </nav>
 
-    <!-- 🔹 Conteúdo -->
     <div class="bg-white p-6 rounded shadow-md w-96 mt-28">
       <h1 class="text-xl font-bold mb-4 text-center">🔐 Alterar Senha</h1>
 
-      <input
-        id="currentPass"
-        type="password"
-        placeholder="Senha atual"
-        class="input mb-3"
-      />
-      <input
-        id="newPass"
-        type="password"
-        placeholder="Nova senha"
-        class="input mb-3"
-      />
-      <input
-        id="confNewPass"
-        type="password"
-        placeholder="Confirme nova senha"
-        class="input mb-3"
-      />
+      <input id="currentPass" type="password" placeholder="Senha atual" class="input mb-3" />
+      <input id="newPass" type="password" placeholder="Nova senha" class="input mb-3" />
+      <button onclick="requestPasswordChange()" class="btn bg-yellow-600 w-full">Solicitar Alteração</button>
 
-      <button onclick="updatePass()" class="btn bg-yellow-600 w-full">
-        Salvar
-      </button>
+      <div id="confirmSection" class="hidden mt-4">
+        <input id="code" type="text" placeholder="Digite o código recebido" class="input mb-3" />
+        <button onclick="confirmChange()" class="btn bg-green-600 w-full">Confirmar Alteração</button>
+      </div>
 
-      <!-- 🔹 status dinâmico -->
       <p id="status" class="text-sm text-center mt-3 font-semibold"></p>
     </div>
 
     <style>
-      .input {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 0.375rem;
-      }
-      .btn {
-        padding: 0.5rem;
-        color: white;
-        border: none;
-        border-radius: 0.375rem;
-        cursor: pointer;
-      }
+      .input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 0.375rem; }
+      .btn { padding: 0.5rem; color: white; border: none; border-radius: 0.375rem; cursor: pointer; }
     </style>
 
     <script>
-      const API = "http://localhost:3000/auth/me/password";
+      const API_REQUEST = "http://localhost:3000/auth/me/password/request";
+      const API_CONFIRM = "http://localhost:3000/auth/me/confirm-change";
       const token = localStorage.getItem("token");
 
-      function logout() {
-        localStorage.removeItem("token");
-        window.location.href = "index.html";
-      }
-
-      async function updatePass() {
+      async function requestPasswordChange() {
         const currentPass = document.getElementById("currentPass").value;
         const newPass = document.getElementById("newPass").value;
-        const confNewPass = document.getElementById("confNewPass").value;
 
-        const res = await fetch(API, {
+        const res = await fetch(API_REQUEST, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + token,
-          },
-          body: JSON.stringify({ currentPass, newPass, confNewPass }),
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ currentPass, newPass }),
         });
 
         const data = await res.json();
-        const statusEl = document.getElementById("status");
+        document.getElementById("status").textContent = data.message || data.error;
 
         if (res.ok) {
-          statusEl.textContent = data.message || "Senha alterada com sucesso!";
-          statusEl.className =
-            "text-sm text-center mt-3 font-semibold text-green-600";
+          document.getElementById("confirmSection").classList.remove("hidden");
+        }
+      }
+
+      async function confirmChange() {
+        const code = document.getElementById("code").value;
+        const res = await fetch(API_CONFIRM, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ code }),
+        });
+
+        const data = await res.json();
+        document.getElementById("status").textContent = data.message || data.error;
+
+        if (res.ok) {
+          document.getElementById("status").classList.add("text-green-600");
+          setTimeout(() => (window.location.href = "profile.html"), 1500);
         } else {
-          statusEl.textContent = data.error || "Erro ao alterar senha.";
-          statusEl.className =
-            "text-sm text-center mt-3 font-semibold text-red-600";
+          document.getElementById("status").classList.add("text-red-600");
         }
       }
     </script>
@@ -1495,23 +1512,36 @@ exports.delete = async (req, res) => {
 // Lê todos os produtos da base;
 exports.read = async (req, res) => {
   try {
-    // Busca todos os produtos disponíveis;
-    const products = await Tec.find();
+    const { titulo, minPreco, maxPreco, emEstoque, page, limit, sort, order } = req.query;
 
-    // Conta quantos produtos existem baseado na sua extensão;
-    const totalProd = products.length;
+    const filters = {};
+    if (titulo) filters.titulo = { $regex: titulo, $options: "i" };
+    if (minPreco || maxPreco) {
+      filters.preco = {};
+      if (minPreco) filters.preco.$gte = minPreco;
+      if (maxPreco) filters.preco.$lte = maxPreco;
+    }
+    if (emEstoque !== undefined) filters.emEstoque = emEstoque;
 
-    // Retorna com todos os produtos e o total existente;
+    const total = await Tec.countDocuments(filters);
+
+    const products = await Tec.find(filters)
+      .sort({ [sort]: order === "asc" ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
     res.status(200).json({
-      totalProd,
+      page,
+      limit,
+      total,
       products,
     });
   } catch (error) {
-    return res
-      .status(400)
-      .json({ erro: "Erro ao ler os produtos da base de dados." });
+    console.error("Erro ao buscar produtos:", error);
+    return res.status(500).json({ error: "Erro ao buscar produtos." });
   }
 };
+
 
 // Lê um único produto pelo ID na base de dados;
 exports.readID = async (req, res) => {
@@ -1539,6 +1569,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const Token = require("../models/Token");
+const sendEmail = require("../utils/sendEmail");
+const { verificationCodeTemplate } = require("../utils/emailTemplates");
 
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -1688,6 +1721,23 @@ exports.changePassword = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: "A senha é obrigatória para excluir a conta." });
+    }
+
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
+
+    // Verifica senha
+    const validPass = await bcrypt.compare(password, user.password);
+    if (!validPass) {
+      return res.status(401).json({ error: "Senha incorreta." });
+    }
+
     await User.findByIdAndDelete(req.user.id);
     res.json({ message: "Conta excluída com sucesso." });
   } catch (error) {
@@ -1698,21 +1748,123 @@ exports.deleteUser = async (req, res) => {
 
 exports.searchUsers = async (req, res) => {
   try {
-    const { name, email, page = 1, limit = 10 } = req.query;
+    const { name, email, page = 1, limit = 10, sort = "createdAt", order = "asc" } = req.query;
 
     const filters = {};
     if (name) filters.name = { $regex: name, $options: "i" };
     if (email) filters.email = { $regex: email, $options: "i" };
 
+    const total = await User.countDocuments(filters);
+
     const usersResult = await User.find(filters)
       .select("-password")
+      .sort({ [sort]: order === "desc" ? -1 : 1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
-    res.json({ total: usersResult.length, usersResult });
+    res.json({
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      users: usersResult,
+    });
   } catch (error) {
     console.error("Erro ao buscar usuários:", error);
     res.status(500).json({ error: "Erro interno ao buscar usuários." });
+  }
+};
+
+// Solicitar alteração de e-mail
+exports.requestEmailChange = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    // Gerar token de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Salvar no banco
+    await Token.create({
+      userId: user._id,
+      code,
+      type: "email",
+      payload: { newEmail },
+    });
+
+    // Enviar por e-mail
+    await sendEmail(
+      user.email,
+      "Confirmação de Alteração de E-mail - LojaTec",
+      `Seu código de confirmação: ${code} (válido por 1 minuto).`,
+      verificationCodeTemplate(user.name, code, "email")
+    );
+
+    res.json({ message: "Código de verificação enviado para seu e-mail." });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao solicitar alteração de e-mail." });
+  }
+};
+
+// Solicitar alteração de senha
+exports.requestPasswordChange = async (req, res) => {
+  try {
+    const { newPass, currentPass } = req.body;
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) return res.status(404).json({ error: "Usuário não encontrado." });
+
+    const validPass = await bcrypt.compare(currentPass, user.password);
+    if (!validPass) return res.status(400).json({ error: "Senha atual incorreta." });
+
+    const hash = await bcrypt.hash(newPass, 12);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await Token.create({
+      userId: user._id,
+      code,
+      type: "password",
+      payload: { password: hash },
+    });
+
+    await sendEmail(
+      user.email,
+      "Confirmação de Alteração de Senha - LojaTec",
+      `Seu código de confirmação: ${code} (válido por 1 minuto).`,
+      verificationCodeTemplate(user.name, code, "password")
+    );
+    
+
+    res.json({ message: "Código de verificação enviado para seu e-mail." });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao solicitar alteração de senha." });
+  }
+};
+
+// Confirmar token e aplicar mudança
+exports.confirmChange = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const tokenData = await Token.findOne({ code, userId: req.user.id });
+
+    if (!tokenData) return res.status(400).json({ error: "Código inválido." });
+    if (tokenData.expiresAt < Date.now()) {
+      await tokenData.deleteOne();
+      return res.status(400).json({ error: "Código expirado." });
+    }
+
+    // Aplica alteração
+    if (tokenData.type === "email") {
+      await User.findByIdAndUpdate(req.user.id, { email: tokenData.payload.newEmail });
+    } else if (tokenData.type === "password") {
+      await User.findByIdAndUpdate(req.user.id, { password: tokenData.payload.password });
+    }
+
+    await tokenData.deleteOne();
+
+    res.json({ message: `${tokenData.type === "email" ? "E-mail" : "Senha"} alterado com sucesso.` });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao confirmar código." });
   }
 };
 
