@@ -19,3 +19,140 @@ Se não houver controle, isso vira risco de privacidade.
 Implementar paginação e filtros.
 
 Permitir busca por nome ou e-mail, mas não retornar senhas ou dados sensíveis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🏗️ Arquitetura Atual da API
+1️⃣ Arquivo Principal – server.js
+
+Configura o Express, CORS e carrega variáveis de ambiente (dotenv).
+
+Conecta ao banco (connectDB).
+
+Registra as rotas:
+
+/auth → rotas de usuários (registro, login, CRUD do próprio usuário)
+
+/products → rotas de produtos
+
+Middleware de autenticação global (requireAuth) aplicado para rotas privadas.
+
+Endpoint de teste (GET /) para confirmar que a API está rodando.
+
+2️⃣ Módulos e Pastas
+
+📂 controllers/
+
+userControllers.js → login, registro, update de e-mail/senha com envio de token, confirmação de alteração, exclusão de conta com senha.
+
+productControllers.js → CRUD de produtos com suporte a busca com filtros, paginação e ordenação.
+
+📂 routes/
+
+userRoutes.js → define endpoints /auth/...
+
+productRoutes.js → define endpoints /products/...
+
+📂 middlewares/
+
+requireAuth.js → protege rotas privadas.
+
+validateProductSearch.js → valida filtros de busca de produtos.
+
+validateUser.js → valida corpo de requests de usuário com Joi.
+
+📂 validations/
+
+userSchema.js → validações de registro/atualização de usuário.
+
+searchUserSchema.js → validações para busca de usuários (com paginação, sort, order).
+
+productSearchSchema.js → validações para busca de produtos.
+
+📂 models/
+
+User.js → schema de usuário (com hash de senha e timestamps).
+
+Tec.js → schema de produto.
+
+Token.js → schema de token temporário (código de 6 dígitos com expiração de 1 minuto).
+
+📂 utils/
+
+sendEmail.js → envio de e-mails (suporte a HTML e texto puro).
+
+emailTemplates.js → templates HTML de e-mail para envio de código de confirmação.
+
+3️⃣ Principais Funcionalidades
+
+✅ Autenticação: login e registro com bcrypt e JWT
+✅ Troca de e-mail e senha com envio de código por e-mail e confirmação antes de aplicar
+✅ Expiração de token em 1 minuto para mais segurança
+✅ Exclusão de conta exige senha
+✅ CRUD de produtos com:
+
+Filtros (título, preço mínimo/máximo, estoque)
+
+Paginação (page, limit)
+
+Ordenação (sort, order)
+
+✅ Busca de usuários com paginação, sort/order e regex parcial (name/email)
+
+4️⃣ Pontos Fortes
+
+Código modular e fácil de expandir
+
+Middleware de validação com Joi para padronizar entrada de dados
+
+Tokens expiram sozinhos (segurança)
+
+Envio de e-mail usando templates HTML (UX melhor)
+
+5️⃣ Melhorias Futuras (Sugestões)
+
+🔹 Limpeza automática de tokens expirados (job a cada X minutos)
+🔹 Controle de acesso mais granular (ex.: rota de listar usuários só para administradores)
+🔹 Filtros de data na busca de usuários (por intervalo de criação)
+🔹 Testes automatizados (Jest ou Supertest para endpoints principais)
+🔹 Envio de link clicável no e-mail (para confirmar alteração direto pelo frontend)
